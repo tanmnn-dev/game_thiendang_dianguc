@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const http = require('http');
 const express = require('express');
 const { Server } = require('socket.io');
@@ -8,6 +9,65 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
+
+// Thư mục lưu trữ database bền vững (Mount từ Docker volume /app/database)
+const DB_DIR = path.join(__dirname, 'database');
+const DB_FILE = path.join(DB_DIR, 'players.json');
+
+if (!fs.existsSync(DB_DIR)) {
+  try { fs.mkdirSync(DB_DIR, { recursive: true }); } catch (e) {}
+}
+
+// Bể lưu trữ hồ sơ người chơi vĩnh viễn: Map<token, profile>
+const savedProfiles = new Map();
+
+function loadDatabase() {
+  try {
+    if (fs.existsSync(DB_FILE)) {
+      const raw = fs.readFileSync(DB_FILE, 'utf8');
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        for (const item of data) {
+          if (item && item.token) {
+            savedProfiles.set(item.token, item);
+          }
+        }
+        console.log(`[DATABASE] Đã nạp thành công ${savedProfiles.size} hồ sơ nhân vật từ ${DB_FILE}`);
+      }
+    }
+  } catch (err) {
+    console.error('[DATABASE] Lỗi khi nạp players.json:', err.message);
+  }
+}
+
+function saveDatabase() {
+  try {
+    const list = Array.from(savedProfiles.values());
+    const tmpFile = DB_FILE + '.tmp';
+    fs.writeFileSync(tmpFile, JSON.stringify(list, null, 2), 'utf8');
+    fs.renameSync(tmpFile, DB_FILE);
+  } catch (err) {
+    console.error('[DATABASE] Lỗi khi lưu players.json:', err.message);
+  }
+}
+
+// Nạp database ngay khi khởi chạy
+loadDatabase();
+
+// Định kỳ lưu snapshot mỗi 10 giây
+setInterval(saveDatabase, 10000);
+
+// Xử lý SIGTERM và SIGINT lưu an toàn trước khi dừng container
+process.on('SIGTERM', () => {
+  console.log('[SYSTEM] Nhận tín hiệu SIGTERM. Đang lưu database trước khi dừng...');
+  saveDatabase();
+  process.exit(0);
+});
+process.on('SIGINT', () => {
+  console.log('[SYSTEM] Nhận tín hiệu SIGINT. Đang lưu database trước khi dừng...');
+  saveDatabase();
+  process.exit(0);
+});
 
 // Phục vụ thư mục tĩnh public/
 app.use(express.static(path.join(__dirname, 'public')));
@@ -180,6 +240,27 @@ function broadcastKillFeed(text, icon = '📜') {
   });
 }
 
+// Đồng bộ dữ liệu người chơi vào Map hồ sơ vĩnh viễn
+function syncPlayerToProfile(player, saveNow = true) {
+  if (!player || player.isBot || !player.token) return;
+  savedProfiles.set(player.token, {
+    token: player.token,
+    name: player.name,
+    karma: player.karma,
+    realm: player.realm,
+    x: Math.round(player.x),
+    y: Math.round(player.y),
+    stats: player.stats || { ascended: 0, descended: 0, smited: 0, pulled: 0, recruited: 0 },
+    tier: player.tier,
+    quest: player.quest,
+    lastSeenAt: Date.now(),
+    createdAt: player.createdAt || Date.now()
+  });
+  if (saveNow) {
+    saveDatabase();
+  }
+}
+
 // Cập nhật Karma an toàn và kiểm tra tiến hóa / chuyển cõi
 function updateKarma(player, delta, reason = '', actor = null) {
   const oldTier = player.tier ? player.tier.id : getPlayerTier(player.karma).id;
@@ -268,6 +349,9 @@ function updateKarma(player, delta, reason = '', actor = null) {
     stats: player.stats,
     tier: player.tier
   });
+
+  // Tự động đồng bộ hồ sơ lưu trữ
+  syncPlayerToProfile(player);
 }
 
 // Kiểm tra Khiên Phản Nghiệp (H5): phản ngược chiêu xấu về kẻ tung
@@ -566,7 +650,8 @@ const BOTS = [
 ];
 
 function initBots() {
-  for (const b of BOTS) {
+  const activeBots = getActiveBotList();
+  for (const b of activeBots) {
     const tier = getPlayerTier(b.karma);
     players.set(b.id, {
       id: b.id,
@@ -599,16 +684,82 @@ function initBots() {
   }
 }
 
+// Cơ chế co giãn Bots tự động (Adaptive Bots) theo số người thật online
+function getActiveBotList() {
+  const realCount = Array.from(players.values()).filter(p => !p.isBot).length;
+  if (realCount >= 8) {
+    // Khi có từ 8 người thật trở lên: Cho toàn bộ bots đi ngủ nhường sân khấu
+    return [];
+  } else if (realCount >= 4) {
+    // Khi có từ 4 đến 7 người thật: Giữ 6 bots nòng cốt (3 Thiên Đàng, 3 Địa Ngục)
+    return [BOTS[0], BOTS[1], BOTS[2], BOTS[7], BOTS[8], BOTS[9]];
+  }
+  // Dưới 4 người thật: Kích hoạt đầy đủ 14 bots để bản đồ luôn nhộn nhịp
+  return BOTS;
+}
+
+function adjustBotsForPlayerCount() {
+  const targetBots = getActiveBotList();
+  const targetIds = new Set(targetBots.map(b => b.id));
+
+  for (const b of BOTS) {
+    const isOnline = players.has(b.id);
+    const shouldBeOnline = targetIds.has(b.id);
+
+    if (shouldBeOnline && !isOnline) {
+      // Đánh thức bot
+      const tier = getPlayerTier(b.karma);
+      const botPlayer = {
+        id: b.id,
+        name: b.name,
+        karma: b.karma,
+        realm: b.realm,
+        x: b.x,
+        y: b.y,
+        isBot: true,
+        lastActionAt: Date.now(),
+        lastPullAt: 0,
+        lastLanternAt: 0,
+        lastConfessAt: 0,
+        lastSoupAt: 0,
+        lastAmnestyAt: 0,
+        lastChainAt: 0,
+        lastWoodenFishAt: 0,
+        fishCombo: 1,
+        drunkUntil: 0,
+        speedBoostUntil: 0,
+        shieldUntil: 0,
+        politeUntil: 0,
+        reverseMoveUntil: 0,
+        danceUntil: 0,
+        polymorph: null,
+        cooldowns: {},
+        stats: { ascended: 0, descended: 0, smited: 0, pulled: 0, recruited: 0 },
+        tier
+      };
+      players.set(b.id, botPlayer);
+      io.emit('player:joined', botPlayer);
+    } else if (!shouldBeOnline && isOnline) {
+      // Cho bot tạm nghỉ
+      players.delete(b.id);
+      io.emit('player:left', { id: b.id });
+    }
+  }
+}
+
 // Vòng lặp hành vi tự động của Bots: Chiến đấu, Tranh chấp Cứ Điểm & Kéo người về phe
 // Tối ưu hiệu năng: Stagger 2 bots mỗi 500ms thay vì dồn dập 14 bots cùng millisecond 0 gây giật lag
 let botCursor = 0;
 function startBotLoop() {
   setInterval(() => {
     const now = Date.now();
-    const batchSize = 2;
+    const activeBots = getActiveBotList();
+    if (activeBots.length === 0) return;
+
+    const batchSize = Math.min(2, activeBots.length);
 
     for (let i = 0; i < batchSize; i++) {
-      const b = BOTS[(botCursor + i) % BOTS.length];
+      const b = activeBots[(botCursor + i) % activeBots.length];
       if (!b) continue;
       const p = players.get(b.id);
       if (!p) continue;
@@ -1067,6 +1218,21 @@ setInterval(() => {
   }
 }, 5000);
 
+// Quản lý số kết nối trên mỗi IP (Chống Spam Đa Tab / Treo máy)
+const ipConnections = new Map();
+
+function getClientIp(socket) {
+  const headers = socket.handshake?.headers || {};
+  const cfIp = headers['cf-connecting-ip'];
+  if (cfIp) return cfIp.trim();
+  const xForwarded = headers['x-forwarded-for'];
+  if (xForwarded) {
+    const first = xForwarded.split(',')[0].trim();
+    if (first) return first;
+  }
+  return socket.handshake?.address || 'unknown';
+}
+
 // Khởi chạy bots & chu kỳ đào tiên & khu vực tranh chấp
 initBots();
 startBotLoop();
@@ -1079,21 +1245,130 @@ const controlPointsTimer = setInterval(updateControlPoints, 2000);
 // XỬ LÝ KẾT NỐI SOCKET.IO MULTIPLAYER
 // =================================================================
 io.on('connection', (socket) => {
-  // 1. NGƯỜI CHƠI THAM GIA PHÒNG
-  socket.on('player:join', (data) => {
+  const clientIp = getClientIp(socket);
+  const isLocalIp = process.env.NODE_ENV === 'test' || clientIp === '127.0.0.1' || clientIp === '::1' || clientIp === 'localhost' || clientIp.includes('127.0.0.1') || clientIp === 'unknown';
+  const currentIpCount = (ipConnections.get(clientIp) || 0) + 1;
+  ipConnections.set(clientIp, currentIpCount);
+  // console.log('[DEBUG IP]', clientIp, 'isLocal:', isLocalIp, 'count:', currentIpCount);
+
+  // Giới hạn tối đa 4 tab/thiết bị từ cùng một IP (trừ localhost)
+  if (!isLocalIp && currentIpCount > 4) {
+    socket.emit('system:toast', { message: 'Đã đạt giới hạn tối đa 4 kết nối từ cùng một địa chỉ mạng!' });
+    socket.disconnect(true);
+    return;
+  }
+
+  // 1.1 TỰ ĐỘNG KHÔI PHỤC PHIÊN CHƠI (SILENT RECONNECT - KHÔNG CẦN ĐĂNG KÝ)
+  socket.on('player:resume', (data = {}) => {
+    const token = data && typeof data.token === 'string' ? data.token.trim() : null;
+    if (!token || !savedProfiles.has(token)) {
+      socket.emit('player:resume_failed', { reason: 'not_found' });
+      return;
+    }
+
+    const saved = savedProfiles.get(token);
+    const tier = getPlayerTier(saved.karma);
+    const realm = saved.karma >= 0 ? 'heaven' : 'hell';
+
+    const player = {
+      id: socket.id,
+      token: saved.token,
+      name: saved.name || 'Linh Hồn',
+      karma: saved.karma,
+      realm,
+      x: typeof saved.x === 'number' ? saved.x : (realm === 'heaven' ? 40 : 40),
+      y: typeof saved.y === 'number' ? saved.y : (realm === 'heaven' ? 25 : 70),
+      lastActionAt: 0,
+      lastPullAt: 0,
+      lastLanternAt: 0,
+      lastConfessAt: 0,
+      lastSoupAt: 0,
+      lastAmnestyAt: 0,
+      lastChainAt: 0,
+      lastWoodenFishAt: 0,
+      fishCombo: 1,
+      drunkUntil: 0,
+      speedBoostUntil: 0,
+      shieldUntil: 0,
+      politeUntil: 0,
+      reverseMoveUntil: 0,
+      danceUntil: 0,
+      polymorph: null,
+      cooldowns: {},
+      stats: saved.stats || { ascended: 0, descended: 0, smited: 0, pulled: 0, recruited: 0 },
+      isBot: false,
+      tier,
+      quest: saved.quest || createRandomQuest(),
+      createdAt: saved.createdAt || Date.now()
+    };
+
+    players.set(socket.id, player);
+    syncPlayerToProfile(player);
+
+    socket.emit('world:init', {
+      selfId: socket.id,
+      token: player.token,
+      resumed: true,
+      player,
+      players: Array.from(players.values()),
+      stats: {
+        heavenCount: Array.from(players.values()).filter(p => p.realm === 'heaven').length,
+        hellCount: Array.from(players.values()).filter(p => p.realm === 'hell').length,
+        total: players.size
+      },
+      peaches: activePeaches,
+      bananas: Array.from(bananaTraps.values()),
+      redPackets: Array.from(activeRedPackets.values()),
+      floatingItems: Array.from(activeFloatingItems.values()),
+      npcManhBa: NPC_MANH_BA,
+      npcTienOng: NPC_TIEN_ONG,
+      npcs: [NPC_MANH_BA, NPC_TIEN_ONG],
+      quest: player.quest,
+      controlPoints: {
+        peach_tree: CONTROL_POINTS.peach_tree,
+        boiling_cauldron: CONTROL_POINTS.boiling_cauldron
+      },
+      activeTrial: activeTrial ? {
+        id: activeTrial.id,
+        authorName: activeTrial.authorName,
+        text: activeTrial.text,
+        endsAt: activeTrial.endsAt,
+        forgiveCount: activeTrial.forgiveVotes.size,
+        punishCount: activeTrial.punishVotes.size
+      } : null
+    });
+
+    socket.broadcast.emit('player:joined', player);
+    broadcastStats();
+    broadcastKillFeed(`⚡ ${player.name} vừa trở lại cõi [${player.tier.title}]!`, '⚡');
+    adjustBotsForPlayerCount();
+  });
+
+  // 1.2 NGƯỜI CHƠI MỚI THAM GIA PHÒNG
+  socket.on('player:join', (data = {}) => {
+    try {
     const rawName = (data && data.name) ? String(data.name).trim() : 'Linh Hồn';
     const cleanName = rawName.substring(0, 20) || 'Linh Hồn Vô Danh';
     const initKarma = typeof data.initialKarma === 'number' ? Math.max(-3000, Math.min(3000, data.initialKarma)) : 0;
     const realm = initKarma >= 0 ? 'heaven' : 'hell';
     const tier = getPlayerTier(initKarma);
 
+    // Tạo token vĩnh viễn không cần đăng ký tài khoản (Zero-Friction Token Persistence)
+    const token = (data && data.token && typeof data.token === 'string' && data.token.startsWith('usr_'))
+      ? data.token
+      : 'usr_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 9);
+
+    let spawnX = realm === 'heaven' ? Math.round(20 + Math.random() * 60) : Math.round(20 + Math.random() * 60);
+    let spawnY = realm === 'heaven' ? Math.round(20 + Math.random() * 20) : Math.round(60 + Math.random() * 20);
+
     const player = {
       id: socket.id,
+      token,
       name: cleanName,
       karma: initKarma,
       realm,
-      x: realm === 'heaven' ? Math.round(20 + Math.random() * 60) : Math.round(20 + Math.random() * 60),
-      y: realm === 'heaven' ? Math.round(20 + Math.random() * 20) : Math.round(60 + Math.random() * 20),
+      x: spawnX,
+      y: spawnY,
       lastActionAt: 0,
       lastPullAt: 0,
       lastLanternAt: 0,
@@ -1114,14 +1389,64 @@ io.on('connection', (socket) => {
       stats: { ascended: 0, descended: 0, smited: 0, pulled: 0, recruited: 0 },
       isBot: false,
       tier,
-      quest: createRandomQuest()
+      quest: createRandomQuest(),
+      createdAt: Date.now()
     };
 
+    // Xử lý Lan Truyền (Viral Loop): Triệu hồi qua Link ?ref=
+    const refToken = data && typeof data.refToken === 'string' ? data.refToken.trim() : null;
+    if (refToken && refToken !== token) {
+      // 1. Tìm người mời đang online
+      let inviter = null;
+      for (const p of players.values()) {
+        if (!p.isBot && p.token === refToken) {
+          inviter = p;
+          break;
+        }
+      }
+
+      if (inviter) {
+        // Thưởng nóng 30 Karma cho người mời
+        updateKarma(inviter, 30, `Triệu hồi tri kỷ [${player.name}] gia nhập cõi (+30 Karma)`);
+        inviter.stats.recruited = (inviter.stats.recruited || 0) + 1;
+        const inviterSocket = getSocketById(inviter.id);
+        if (inviterSocket) {
+          inviterSocket.emit('system:toast', {
+            message: `🎉 Bạn vừa triệu hồi thành công [${player.name}], được thưởng nóng +30 Karma!`
+          });
+        }
+
+        // Spawn người mới ngay cạnh người mời để cùng quậy
+        player.realm = inviter.realm;
+        player.x = Math.max(10, Math.min(90, Math.round(inviter.x + (Math.random() > 0.5 ? 5 : -5))));
+        if (inviter.realm === 'heaven') {
+          player.y = Math.max(16, Math.min(40, Math.round(inviter.y + (Math.random() > 0.5 ? 3 : -3))));
+          if (player.karma < 0) player.karma = 20;
+        } else {
+          player.y = Math.max(60, Math.min(84, Math.round(inviter.y + (Math.random() > 0.5 ? 3 : -3))));
+          if (player.karma >= 0) player.karma = -20;
+        }
+        player.tier = getPlayerTier(player.karma);
+
+        broadcastKillFeed(`🤝 ${inviter.name} đã triệu hồi tri kỷ ${player.name} cùng gia nhập cõi [${player.tier.title}]!`, '🤝');
+      } else if (savedProfiles.has(refToken)) {
+        // Người mời đang offline: cộng điểm vào file profile lưu trữ
+        const inviterProfile = savedProfiles.get(refToken);
+        inviterProfile.karma += 30;
+        if (!inviterProfile.stats) inviterProfile.stats = { ascended: 0, descended: 0, smited: 0, pulled: 0, recruited: 0 };
+        inviterProfile.stats.recruited = (inviterProfile.stats.recruited || 0) + 1;
+        savedProfiles.set(refToken, inviterProfile);
+        saveDatabase();
+      }
+    }
+
     players.set(socket.id, player);
+    syncPlayerToProfile(player);
 
     // Gửi thông tin thế giới hiện tại cho người chơi mới
     socket.emit('world:init', {
       selfId: socket.id,
+      token: player.token,
       players: Array.from(players.values()),
       stats: {
         heavenCount: Array.from(players.values()).filter(p => p.realm === 'heaven').length,
@@ -1154,6 +1479,12 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('player:joined', player);
     broadcastStats();
     broadcastKillFeed(`${player.name} vừa giáng sinh vào cõi [${player.tier.title}]`, '🌟');
+
+    // Tự động điều chỉnh số lượng bots
+    adjustBotsForPlayerCount();
+    } catch (err) {
+      console.error('[CRITICAL ERROR IN PLAYER:JOIN]:', err);
+    }
   });
 
   // 2. DI CHUYỂN NHÂN VẬT (BẢO VỆ RANH GIỚI CÕI & HIỆU ỨNG TROLL)
@@ -2616,13 +2947,29 @@ io.on('connection', (socket) => {
   // 12. NGẮT KẾT NỐI
   // =================================================================
   socket.on('disconnect', () => {
+    // Giảm bộ đếm kết nối IP
+    const count = ipConnections.get(clientIp) || 1;
+    if (count <= 1) {
+      ipConnections.delete(clientIp);
+    } else {
+      ipConnections.set(clientIp, count - 1);
+    }
+
     if (boilingPlayers.has(socket.id)) {
       clearTimeout(boilingPlayers.get(socket.id).timer);
       boilingPlayers.delete(socket.id);
     }
-    players.delete(socket.id);
-    socket.broadcast.emit('player:left', { id: socket.id });
-    broadcastStats();
+
+    const player = players.get(socket.id);
+    if (player) {
+      // Lưu trữ trạng thái nhân vật vĩnh viễn (Zero-Friction Persistence)
+      syncPlayerToProfile(player);
+      players.delete(socket.id);
+      socket.broadcast.emit('player:left', { id: socket.id });
+      broadcastStats();
+      // Tự động điều chỉnh lại số lượng bots
+      adjustBotsForPlayerCount();
+    }
   });
 });
 

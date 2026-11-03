@@ -1,6 +1,6 @@
 {
   "name": "thien-dang-dia-nguc-online",
-  "version": "1.7.1",
+  "version": "1.8.0",
   "description": "Thiên Đàng & Địa Ngục Online - Real-time Multiplayer Web Game",
   "main": "server.js",
   "scripts": {

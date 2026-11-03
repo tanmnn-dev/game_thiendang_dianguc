@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Thiên Đàng & Địa Ngục Online</title>
+  <meta name="description" content="Thiên Đàng & Địa Ngục Online - Game nhập vai nhiều người chơi thời gian thực, tích đức thăng thiên hay tu ma xưng bá tam giới!">
+  <meta property="og:title" content="Thiên Đàng & Địa Ngục Online - Bạn thuộc về cõi nào?">
+  <meta property="og:description" content="Click vào link tham gia ngay cùng bạn bè! Tích đức thăng tiên hay quậy tưng bừng địa ngục! 🪷🔥">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=1200&auto=format&fit=crop&q=80">
+  <meta name="twitter:card" content="summary_large_image">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="/socket.io/socket.io.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -603,6 +609,11 @@
         <span class="hidden sm:inline font-semibold">Sổ Tay</span>
       </button>
 
+      <button id="btnCert" title="Chứng Nhận Nghiệp Quả (Xuất Ảnh)" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-amber-300 border border-amber-500/30 flex items-center space-x-1 transition shadow-sm">
+        <span>📜</span>
+        <span class="hidden sm:inline font-semibold">Chứng Nhận</span>
+      </button>
+
       <button id="btnInvite" title="Sao chép link mời bạn bè" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-sky-300 border border-sky-500/30 flex items-center space-x-1 transition shadow-sm">
         <span>🔗</span>
         <span class="hidden sm:inline font-semibold">Mời Bạn</span>
@@ -611,6 +622,11 @@
       <button id="btnLeaderboard" title="Bảng Phong Thần" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-amber-300 border border-amber-500/30 flex items-center space-x-1 transition shadow-sm">
         <span>🏆</span>
         <span class="hidden sm:inline font-semibold">Phong Thần</span>
+      </button>
+
+      <button id="btnPerfToggle" title="Chuyển đổi đồ họa Cao / Nhẹ" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-emerald-300 border border-emerald-500/30 flex items-center space-x-1 transition shadow-sm">
+        <span id="iconPerf">⚡</span>
+        <span id="txtPerf" class="hidden sm:inline font-semibold">Đồ Họa: Cao</span>
       </button>
 
       <button id="btnAudioToggle" title="Bật/Tắt âm thanh" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-sm border border-slate-600 transition shadow-sm">
@@ -849,6 +865,43 @@
           </div>
           <div id="listSinners" class="space-y-1.5 text-xs text-slate-300"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL CHỨNG NHẬN NGHIỆP QUẢ (1-CLICK XUẤT ẢNH KHOE BẠN BÈ) -->
+  <div id="modalKarmaCert" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-amber-400/70 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative text-center">
+      <button id="btnCloseKarmaCert" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+
+      <div class="text-3xl mb-1">📜</div>
+      <h3 class="text-sm font-black text-amber-300 uppercase tracking-widest">CHỨNG NHẬN NGHIỆP QUẢ</h3>
+      <p class="text-[11px] text-slate-400 mb-3">Lưu lại kỳ tích tu hành hoặc ma đạo để khoe mạng xã hội!</p>
+
+      <!-- Preview Thẻ Chứng Nhận -->
+      <div id="certPreviewCard" class="bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 border-2 border-amber-400/50 rounded-2xl p-4 shadow-inner text-center relative overflow-hidden mb-3">
+        <div class="text-xs uppercase tracking-widest text-amber-400 font-extrabold mb-1">ĐÀI PHÁN XÉT CẢNH GIỚI</div>
+        <div id="certPlayerAvatar" class="text-4xl my-1.5">😇</div>
+        <div id="certPlayerName" class="text-base font-black text-slate-100">...</div>
+        <div id="certPlayerTier" class="text-xs font-bold text-amber-300 mt-0.5">[Thượng Tiên Cưỡi Mây]</div>
+        <div class="inline-block mt-2.5 px-3 py-1 rounded-full bg-slate-950/80 border border-amber-400/40 text-amber-300 font-mono font-black text-xs" id="certPlayerKarma">
+          +1550 Karma
+        </div>
+        <div class="mt-3 pt-2 border-t border-slate-800 text-[9px] text-slate-400 flex justify-between items-center px-1">
+          <span>🎮 thien-dang-dia-nguc-online</span>
+          <span id="certDate">03/11/2026</span>
+        </div>
+      </div>
+
+      <div class="flex space-x-2">
+        <button id="btnDownloadCert" class="flex-1 py-2 px-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 active:scale-95 text-slate-950 font-black text-xs rounded-xl shadow-lg transition flex items-center justify-center space-x-1">
+          <span>💾</span>
+          <span>Tải Ảnh (.PNG)</span>
+        </button>
+        <button id="btnShareCert" class="py-2 px-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-sky-300 font-bold text-xs rounded-xl border border-slate-600 transition flex items-center justify-center space-x-1">
+          <span>🔗</span>
+          <span>Copy Link</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1825,15 +1878,182 @@
       }, 9500);
     }
 
+    // Lấy link mời bạn bè kèm mã giới thiệu (?ref=<token>)
+    function getInviteLink() {
+      const url = new URL(window.location.href);
+      if (myPlayer && myPlayer.token) {
+        url.searchParams.set('ref', myPlayer.token);
+      }
+      return url.toString();
+    }
+
     document.getElementById('btnInvite').addEventListener('click', () => {
+      const inviteUrl = getInviteLink();
       if (navigator.clipboard) {
-        navigator.clipboard.writeText(window.location.href).then(() => {
-          showToast('Đã sao chép link game!');
+        navigator.clipboard.writeText(inviteUrl).then(() => {
+          showToast('Đã copy link mời triệu hồi bạn bè! (+30 Karma khi bạn vào chơi) 🎁');
         });
       } else {
-        showToast('Link: ' + window.location.href);
+        showToast('Link: ' + inviteUrl);
       }
     });
+
+    // Chế độ Đồ Họa Cao / Nhẹ (Tối ưu cho máy yếu & điện thoại)
+    const btnPerfToggle = document.getElementById('btnPerfToggle');
+    const txtPerf = document.getElementById('txtPerf');
+    let isPerfLight = localStorage.getItem('td_perf_mode') === 'light';
+
+    function applyPerfMode() {
+      if (isPerfLight) {
+        canvas.style.display = 'none';
+        if (txtPerf) txtPerf.textContent = 'Đồ Họa: Nhẹ';
+        btnPerfToggle.classList.remove('text-emerald-300', 'border-emerald-500/30');
+        btnPerfToggle.classList.add('text-amber-300', 'border-amber-500/30');
+      } else {
+        canvas.style.display = 'block';
+        if (txtPerf) txtPerf.textContent = 'Đồ Họa: Cao';
+        btnPerfToggle.classList.remove('text-amber-300', 'border-amber-500/30');
+        btnPerfToggle.classList.add('text-emerald-300', 'border-emerald-500/30');
+      }
+    }
+    applyPerfMode();
+
+    btnPerfToggle.addEventListener('click', () => {
+      isPerfLight = !isPerfLight;
+      localStorage.setItem('td_perf_mode', isPerfLight ? 'light' : 'high');
+      applyPerfMode();
+      showToast(isPerfLight ? 'Đã bật chế độ Đồ Họa Nhẹ (Mượt 60 FPS)' : 'Đã bật chế độ Đồ Họa Cao');
+    });
+
+    // Modal Chứng Nhận Nghiệp Quả (Xuất File Ảnh PNG 1-Click)
+    const btnCert = document.getElementById('btnCert');
+    const modalKarmaCert = document.getElementById('modalKarmaCert');
+    const btnCloseKarmaCert = document.getElementById('btnCloseKarmaCert');
+    const certPlayerAvatar = document.getElementById('certPlayerAvatar');
+    const certPlayerName = document.getElementById('certPlayerName');
+    const certPlayerTier = document.getElementById('certPlayerTier');
+    const certPlayerKarma = document.getElementById('certPlayerKarma');
+    const certDate = document.getElementById('certDate');
+    const btnDownloadCert = document.getElementById('btnDownloadCert');
+    const btnShareCert = document.getElementById('btnShareCert');
+
+    function openKarmaCert() {
+      if (!myPlayer) {
+        showToast('Chưa vào phòng! Hãy hoàn tất phán xét để nhận chứng nhận.');
+        return;
+      }
+      certPlayerAvatar.textContent = myPlayer.tier.avatar || '🙂';
+      certPlayerName.textContent = myPlayer.name;
+      certPlayerTier.textContent = `[${myPlayer.tier.title}]`;
+      certPlayerKarma.textContent = (myPlayer.karma > 0 ? '+' : '') + myPlayer.karma + ' Karma';
+      const d = new Date();
+      certDate.textContent = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+      modalKarmaCert.classList.remove('hidden');
+    }
+
+    if (btnCert) btnCert.addEventListener('click', openKarmaCert);
+    if (btnCloseKarmaCert) btnCloseKarmaCert.addEventListener('click', () => modalKarmaCert.classList.add('hidden'));
+
+    if (btnShareCert) {
+      btnShareCert.addEventListener('click', () => {
+        const inviteUrl = getInviteLink();
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(inviteUrl).then(() => showToast('Đã copy link mời triệu hồi bạn bè! 🎁'));
+        } else {
+          showToast('Link: ' + inviteUrl);
+        }
+      });
+    }
+
+    if (btnDownloadCert) {
+      btnDownloadCert.addEventListener('click', () => {
+        if (!myPlayer) return;
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = 600;
+        exportCanvas.height = 420;
+        const exCtx = exportCanvas.getContext('2d');
+
+        const isHeaven = myPlayer.realm === 'heaven';
+        // Gradient nền
+        const bgGrad = exCtx.createLinearGradient(0, 0, 600, 420);
+        if (isHeaven) {
+          bgGrad.addColorStop(0, '#091c34');
+          bgGrad.addColorStop(0.5, '#122543');
+          bgGrad.addColorStop(1, '#2c1e45');
+        } else {
+          bgGrad.addColorStop(0, '#260707');
+          bgGrad.addColorStop(0.5, '#1a0815');
+          bgGrad.addColorStop(1, '#06060c');
+        }
+        exCtx.fillStyle = bgGrad;
+        exCtx.fillRect(0, 0, 600, 420);
+
+        // Khung viền kép hoàng kim
+        exCtx.strokeStyle = isHeaven ? '#fbbf24' : '#f43f5e';
+        exCtx.lineWidth = 4;
+        exCtx.strokeRect(16, 16, 568, 388);
+        exCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        exCtx.lineWidth = 1;
+        exCtx.strokeRect(22, 22, 556, 376);
+
+        // Tiêu đề
+        exCtx.textAlign = 'center';
+        exCtx.fillStyle = isHeaven ? '#fef08a' : '#fda4af';
+        exCtx.font = 'bold 13px sans-serif';
+        exCtx.fillText('ĐÀI PHÁN XÉT CÔNG CỘNG • THIÊN ĐÀNG & ĐỊA NGỤC ONLINE', 300, 52);
+
+        exCtx.fillStyle = '#ffffff';
+        exCtx.font = '900 24px sans-serif';
+        exCtx.fillText('CHỨNG NHẬN NGHIỆP BÁO', 300, 88);
+
+        // Avatar
+        exCtx.font = '54px sans-serif';
+        exCtx.fillText(myPlayer.tier.avatar || '🙂', 300, 164);
+
+        // Tên nhân vật
+        exCtx.fillStyle = '#ffffff';
+        exCtx.font = 'bold 22px sans-serif';
+        exCtx.fillText(myPlayer.name, 300, 206);
+
+        // Cảnh giới
+        exCtx.fillStyle = isHeaven ? '#38bdf8' : '#fb7185';
+        exCtx.font = '600 15px sans-serif';
+        exCtx.fillText(`[${myPlayer.tier.title}]`, 300, 234);
+
+        // Điểm Karma
+        exCtx.fillStyle = isHeaven ? '#fbbf24' : '#f87171';
+        exCtx.font = '900 20px monospace';
+        const karmaStr = (myPlayer.karma > 0 ? '+' : '') + myPlayer.karma + ' KARMA';
+        exCtx.fillText(karmaStr, 300, 274);
+
+        // Dấu mộc
+        exCtx.save();
+        exCtx.translate(480, 310);
+        exCtx.rotate(-0.15);
+        exCtx.strokeStyle = isHeaven ? '#fbbf24' : '#ef4444';
+        exCtx.lineWidth = 2;
+        exCtx.strokeRect(-55, -20, 110, 40);
+        exCtx.fillStyle = isHeaven ? '#fbbf24' : '#ef4444';
+        exCtx.font = 'bold 11px sans-serif';
+        exCtx.fillText('ĐÃ XÁC NHẬN', 0, -2);
+        exCtx.font = '9px sans-serif';
+        exCtx.fillText('CHÍNH DANH', 0, 12);
+        exCtx.restore();
+
+        // Footer
+        exCtx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+        exCtx.font = '11px sans-serif';
+        exCtx.fillText('Link chơi: ' + window.location.host, 300, 370);
+
+        // Tải ảnh về
+        const dataUrl = exportCanvas.toDataURL('image/png');
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = `chung_nhan_nghiep_qua_${myPlayer.name.replace(/\s+/g, '_')}.png`;
+        a.click();
+        showToast('🎉 Đã xuất ảnh Chứng Nhận Nghiệp Quả thành công!');
+      });
+    }
 
     const btnAudioToggle = document.getElementById('btnAudioToggle');
     const iconAudio = document.getElementById('iconAudio');
@@ -1911,6 +2131,33 @@
     // Gương Chiếu Nghiệp
     btnCloseMirrorProfile.addEventListener('click', () => modalMirrorProfile.classList.add('hidden'));
 
+    // Tự động khôi phục phiên nhân vật vĩnh viễn (Zero-Friction Token Persistence)
+    const urlParams = new URLSearchParams(window.location.search);
+    const refTokenFromUrl = urlParams.get('ref');
+    const savedToken = localStorage.getItem('td_player_token');
+
+    // Nếu đã có token lưu trong trình duyệt -> thử khôi phục mà không cần hỏi lại 3 câu hỏi
+    if (savedToken) {
+      modalOnboarding.classList.add('hidden');
+      initSocketWithResume(savedToken);
+    }
+
+    function initSocketWithResume(token) {
+      socket = io();
+
+      socket.on('connect', () => {
+        socket.emit('player:resume', { token });
+      });
+
+      socket.on('player:resume_failed', () => {
+        // Token không tồn tại trên server -> mở lại màn hình phán xét
+        localStorage.removeItem('td_player_token');
+        modalOnboarding.classList.remove('hidden');
+      });
+
+      setupSocketListeners();
+    }
+
     // Bắt đầu game sau Onboarding
     btnSubmitOnboarding.addEventListener('click', () => {
       sound.init();
@@ -1933,11 +2180,29 @@
       socket = io();
 
       socket.on('connect', () => {
-        socket.emit('player:join', { name, initialKarma });
+        socket.emit('player:join', {
+          name,
+          initialKarma,
+          refToken: refTokenFromUrl,
+          token: localStorage.getItem('td_player_token')
+        });
       });
 
+      setupSocketListeners();
+    }
+
+    function setupSocketListeners() {
       socket.on('world:init', (data) => {
         myId = data.selfId;
+        if (data.token) {
+          localStorage.setItem('td_player_token', data.token);
+        }
+
+        userBadge.classList.remove('hidden');
+        userBadge.classList.add('flex');
+        bottomDock.classList.remove('hidden');
+        modalOnboarding.classList.add('hidden');
+
         playersContainer.innerHTML = '';
         data.players.forEach(p => {
           playersMap.set(p.id, p);
@@ -1948,6 +2213,10 @@
         updateUserUI();
         updateStatsUI(data.stats);
         sound.startAmbient(myPlayer.realm);
+
+        if (data.resumed) {
+          showToast(`Chào mừng trở lại tam giới, ${myPlayer.name}! 🌟`);
+        }
 
         if (data.peaches) renderPeaches(data.peaches);
         if (data.bananas) data.bananas.forEach(b => spawnBananaElement(b));

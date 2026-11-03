@@ -17,7 +17,7 @@ function sleep(ms) {
 }
 
 async function runTests() {
-  await sleep(1500);
+  await sleep(2500);
 
   // Case 1: HTTP GET /
   const resIndex = await new Promise((resolve) => {
@@ -69,7 +69,7 @@ async function runTests() {
     event: 'player:move',
     data: [{ x: 50, y: 5 }] // out of bounds (< 12)
   }));
-  await sleep(300);
+  await sleep(800);
   console.log('✓ Case 6 Pass: player:move khóa tọa độ y Thiên Đàng [12..44]');
 
   // Case 7: player:action meditate (+3)
@@ -145,9 +145,9 @@ async function runTests() {
   // Khẩu nghiệp thêm để duy trì cõi Địa Ngục sâu (-52)
   await sleep(600);
   ws.send(JSON.stringify({ event: 'player:chat', data: ['dm lừa đảo'] }));
-  await sleep(600);
+  await sleep(700);
   ws.send(JSON.stringify({ event: 'player:chat', data: ['dm bực thế'] }));
-  await sleep(600);
+  await sleep(800);
 
   // Case 11: wooden_fish in hell (+4) & Combo Fever logic
   let comboReceived = null;
@@ -330,7 +330,7 @@ async function runTests() {
   // Tăng lên 800 Karma để đạt H5 (Đại Thiên Sứ 6 Cánh)
   ws.send(JSON.stringify({
     event: 'dev:set_karma',
-    data: [{ delta: 700 }]
+    data: [{ exactKarma: 800, resetCooldowns: true }]
   }));
   await sleep(500);
   assert.strictEqual(evolvedEventReceived, true, 'Case 20 Failed: Vượt ngưỡng phải emit player:evolved');
@@ -428,10 +428,10 @@ async function runTests() {
   console.log('✓ Case 24 Pass: Kỹ năng [Khiên Phản Nghiệp] (H5) dựng lá chắn phản hồi đòn troll');
 
   // Case 25: Hành Động Cơ Bản Địa Ngục: Tự Tạo Nghiệp (self_sin) -25 Karma
-  // Đưa ws xuống cõi Địa Ngục
+  // Đưa ws xuống cõi Địa Ngục bậc D2 (-100 Karma)
   ws.send(JSON.stringify({
     event: 'dev:set_karma',
-    data: [{ delta: -1200 }]
+    data: [{ exactKarma: -100, resetCooldowns: true }]
   }));
   await sleep(600);
 
@@ -476,7 +476,7 @@ async function runTests() {
   // Hạ karma xuống -2500 để đạt bậc D7 Hỗn Thế Ma Tôn
   ws.send(JSON.stringify({
     event: 'dev:set_karma',
-    data: [{ delta: -2200 }]
+    data: [{ exactKarma: -2500, resetCooldowns: true }]
   }));
   await sleep(600);
 

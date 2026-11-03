@@ -4,6 +4,55 @@ Tất cả các thay đổi của dự án được ghi nhận tại đây theo 
 
 ---
 
+## v1.8.0 (2026-11-03) — Zero-Friction Persistence, Viral Referral Loop, Adaptive Bots & Anti-Abuse Hardening
+
+### [NEW]
+- **Lưu Trạng Thái Nhân Vật Vĩnh Viễn Không Cần Đăng Ký (Zero-Friction Token Persistence)**:
+  - Sinh mã định danh token duy nhất ngẫu nhiên `usr_<timestamp>_<random>` khi người chơi lần đầu tham gia.
+  - Lưu trữ kép tại `localStorage` phía client và file JSON bền vững tại `/app/database/players.json` (mount từ Docker volume `./database:/app/database`).
+  - Ghi đĩa nguyên tử an toàn (Atomic File Operations qua `.tmp` và `fs.renameSync`) chống hỏng database khi container bị tắt đột ngột.
+  - Tích hợp bắt tín hiệu `SIGTERM` và `SIGINT` flush toàn bộ dữ liệu người chơi xuống đĩa trước khi dừng process.
+- **Tự Động Khôi Phục Phiên Chơi Liền Mạch (Silent Reconnect)**:
+  - Khi người chơi mở lại tab, đổi mạng hoặc mở khóa điện thoại, client tự động gửi sự kiện `player:resume` kèm token định danh.
+  - Server khôi phục trọn vẹn điểm Karma, cấp bậc hình thái, cõi, tọa độ, nhiệm vụ và chỉ số thống kê (`stats.ascended`, `stats.descended`, `stats.recruited`, `stats.smited`, `stats.pulled`).
+  - Bỏ qua hoàn toàn màn hình 3 câu hỏi phán xét đầu game, vào thẳng trận chiến ngay lập tức.
+- **Hiệu Ứng Lan Truyền & Triệu Hồi Bạn Bè (Viral Loop `?ref=<token>`)**:
+  - Tích hợp nút `🔗 Mời Bạn Bè (+30 Karma)` sinh liên kết mời cá nhân hóa dạng `https://domain.com/?ref=<token>`.
+  - Khi bạn bè click vào link tham gia: Người mời nhận thưởng nóng **+30 Karma** (kể cả khi đang online hoặc offline) và tăng chỉ số chiêu mộ `stats.recruited`.
+  - Người chơi mới tự động được spawn cùng cõi và đứng ngay sát cạnh người mời để cùng nhau tung chiêu quậy tam giới.
+  - Bổ sung hệ thống Open Graph meta tags (`og:title`, `og:description`, `og:image`, `og:url`) chuẩn hóa hiển thị thumbnail sang trọng khi chia sẻ link qua Zalo, Facebook, Messenger.
+- **Xuất Ảnh "Chứng Nhận Nghiệp Quả" 1-Click (HTML5 Canvas 2D Export)**:
+  - Nút `📜 Chứng Nhận Nghiệp` mở popup và vẽ tức thì một chứng chỉ căn cước nghiệp báo kích thước 640x840 px trên HTML5 Canvas.
+  - Thiết kế sang trọng: Nền gradient theo cõi, khung viền hoàng kim hoa văn Phật giáo/Địa ngục, Avatar kích thước lớn, danh hiệu, điểm Karma, chi tiết 5 chỉ số tu tập/tạo nghiệp và dấu mộc phán xét đỏ `ĐÃ ĐÓNG DẤU ĐỊA PHỦ` hoặc vàng `TIÊN THÁNH CHỨNG GIÁM`.
+  - Cho phép người chơi tải file ảnh PNG về máy chỉ bằng 1 cú click để flex lên mạng xã hội hoặc story.
+- **Co Giãn Bots Thông Minh Theo Mật Độ Người Thật (Adaptive Bots)**:
+  - Cơ chế `adjustBotsForPlayerCount()` tự động điều hòa nhân vật trên bản đồ:
+    - **Dưới 4 người thật**: Duy trì tối đa 14 ambient bots đối đầu kịch tính để map luôn đông vui nhộn nhịp.
+    - **Từ 4 đến 7 người thật**: Tự động thu gọn còn đúng 6 bots nòng cốt (3 Thiên Đàng, 3 Địa Ngục) nhường không gian cho người thật tương tác.
+    - **Từ 8 người thật trở lên**: Toàn bộ 14 bots tự động đi ngủ (0 bot), nhường trọn vẹn 100% sân chơi cho các game thủ thật thi tài.
+    - Khi người chơi thật rời phòng (< 4 người), các bots tự động hồi sinh bù lại tức thì.
+- **Giới Hạn Kết Nối Chống Spam Đa Tab & Chế Độ Đồ Họa Nhẹ (Performance & Anti-Abuse)**:
+  - Trích xuất IP thật qua header `cf-connecting-ip` (Cloudflare) hoặc `x-forwarded-for` (Nginx/Traefik).
+  - Giới hạn tối đa 4 kết nối cùng một IP chống treo server hoặc mở hàng chục tab cày điểm phá hoại.
+  - Nút chuyển đổi `⚡ Đồ Họa: Cao / Nhẹ` (`btnPerfToggle`) trên thanh header: Cho phép người chơi máy yếu hoặc điện thoại tắt toàn bộ hiệu ứng đổ bóng, giảm 65% hạt canvas để đạt độ mượt 60 FPS tuyệt đối.
+
+### [TEST]
+- Hoàn thành bộ kiểm thử tự động toàn diện **54 test cases** (42 cases gameplay gốc + 12 cases tính năng mới v1.8.0), kiểm chứng 100% hành vi hệ thống:
+  - Case 1: Nhận token định danh duy nhất `usr_*` khi join phòng.
+  - Case 2: Hồ sơ người chơi lưu bền vững vào `database/players.json`.
+  - Case 3: Thao tác tăng Karma và ngắt kết nối an toàn.
+  - Case 4: Silent Reconnect khôi phục trọn vẹn điểm Karma cũ (123) và cấp bậc.
+  - Case 5: Xử lý từ chối `player:resume_failed` với token không tồn tại.
+  - Case 6: Kết nối qua liên kết mời `?ref=<token>`.
+  - Case 7: Thưởng nóng +30 Karma cho người mời và tăng `stats.recruited`.
+  - Case 8: Spawn người mới cùng cõi cạnh người mời.
+  - Case 9: Dưới 4 người thật duy trì đủ 14 bots.
+  - Case 10: Từ 4 đến 7 người thật tự co giãn còn đúng 6 bots.
+  - Case 11: Từ 8 người thật trở lên toàn bộ bots tự động đi ngủ (0 bot).
+  - Case 12: Bots tự động hồi sinh đủ 14 khi người chơi thật rời phòng.
+
+---
+
 ## v1.7.1 (2026-11-03) — Performance Optimization (Staggered Bot Tick, Canvas FPS Boost & DOM Reflow Containment)
 
 ### [IMPROVE]

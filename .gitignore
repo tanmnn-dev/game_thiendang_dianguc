@@ -16,6 +16,8 @@ logs/
 # Runtime / OS files
 .DS_Store
 Thumbs.db
+database/*.json
+database/*.tmp
 .mcp.json
 .claude/hooks
 .claude/loop.md
