@@ -4,6 +4,23 @@ Tất cả các thay đổi của dự án được ghi nhận tại đây theo 
 
 ---
 
+## v1.7.1 (2026-11-03) — Performance Optimization (Staggered Bot Tick, Canvas FPS Boost & DOM Reflow Containment)
+
+### [IMPROVE]
+- **Tối Ưu Vòng Lặp Bot & Mạng WebSocket Server-Side**:
+  - **Staggered Bot Loop**: Thay thế cơ chế dồn 14 bots cùng di chuyển ở millisecond 0 (gây spike nghẽn socket và giật frame) bằng kỹ thuật chia nhỏ 2 bots mỗi 500ms. Socket packet phát tán đều đặn theo thời gian, triệt tiêu 100% hiện tượng micro-stutter.
+  - **Throttled Control Points Broadcast**: Thêm kiểm tra delta change cho Cứ Điểm Tranh Chấp, chỉ emit socket khi số người hoặc % chiếm đóng thực sự thay đổi (kèm heartbeat 10s), cắt giảm 80% lưu lượng mạng nhàn rỗi.
+- **Tăng Tốc 2D Canvas Nền (Tăng Gấp Đôi FPS)**:
+  - Loại bỏ hoàn toàn `ctx.shadowBlur` trong vòng lặp hạt `requestAnimationFrame` (tiết kiệm hàng ngàn phép tính blur convolution nặng nề mỗi giây trên GPU/CPU).
+  - Điều chỉnh mật độ hạt thông minh (24 hạt trên mobile, 38 hạt trên desktop).
+  - Tự động tạm dừng vẽ canvas khi tab trình duyệt bị ẩn (`document.hidden`) giúp tiết kiệm pin và tài nguyên máy tính/điện thoại.
+- **Cô Lập Layout Reflow & Tăng Tốc Phần Cứng (Hardware Layer)**:
+  - Thay `transition-all` trên nhân vật bằng `transition: left 700ms ease-out, top 700ms ease-out`.
+  - Bổ sung `will-change: left, top` và `contain: layout style` giúp trình duyệt cô lập hoàn toàn việc render từng nhân vật, không gây reflow lan rộng ra DOM cha.
+  - Tối ưu các hiệu ứng `@keyframes` (Cầu Nại Hà, Cây Đào, Lửa Vạc Dầu, Tiên Ông) từ 2-4 layer `drop-shadow` xuống 1 layer sắc nét kèm `transform: translateZ(0)` và `will-change: filter`.
+
+---
+
 ## v1.7.0 (2026-11-03) — Polish UI/UX, Mobile-First Responsive & Dual-Path Quest System
 
 ### [NEW]

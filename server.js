@@ -490,7 +490,11 @@ function getKarmaMultiplier(player) {
   return hasControl ? 2 : 1;
 }
 
+let lastControlPointsPayload = '';
+let lastControlPointsBroadcast = 0;
+
 function updateControlPoints() {
+  const now = Date.now();
   for (const cp of Object.values(CONTROL_POINTS)) {
     let heavenCount = 0;
     let hellCount = 0;
@@ -525,10 +529,17 @@ function updateControlPoints() {
     }
   }
 
-  io.emit('control_points:update', {
-    peach_tree: CONTROL_POINTS.peach_tree,
-    boiling_cauldron: CONTROL_POINTS.boiling_cauldron
-  });
+  // Tối ưu hiệu năng: Chỉ broadcast socket khi điểm tiến trình hoặc số người thay đổi,
+  // hoặc gửi heartbeat định kỳ mỗi 10s để tránh spam network
+  const currentPayload = `${CONTROL_POINTS.peach_tree.progress}_${CONTROL_POINTS.peach_tree.heavenCount}_${CONTROL_POINTS.peach_tree.hellCount}_${CONTROL_POINTS.boiling_cauldron.progress}_${CONTROL_POINTS.boiling_cauldron.heavenCount}_${CONTROL_POINTS.boiling_cauldron.hellCount}`;
+  if (currentPayload !== lastControlPointsPayload || (now - lastControlPointsBroadcast >= 10000)) {
+    lastControlPointsPayload = currentPayload;
+    lastControlPointsBroadcast = now;
+    io.emit('control_points:update', {
+      peach_tree: CONTROL_POINTS.peach_tree,
+      boiling_cauldron: CONTROL_POINTS.boiling_cauldron
+    });
+  }
 }
 
 // =================================================================
@@ -589,11 +600,16 @@ function initBots() {
 }
 
 // Vòng lặp hành vi tự động của Bots: Chiến đấu, Tranh chấp Cứ Điểm & Kéo người về phe
+// Tối ưu hiệu năng: Stagger 2 bots mỗi 500ms thay vì dồn dập 14 bots cùng millisecond 0 gây giật lag
+let botCursor = 0;
 function startBotLoop() {
   setInterval(() => {
     const now = Date.now();
+    const batchSize = 2;
 
-    for (const b of BOTS) {
+    for (let i = 0; i < batchSize; i++) {
+      const b = BOTS[(botCursor + i) % BOTS.length];
+      if (!b) continue;
       const p = players.get(b.id);
       if (!p) continue;
 
@@ -893,7 +909,8 @@ function startBotLoop() {
         io.emit('player:chatted', { id: p.id, message: text, isPenalty: false });
       }
     }
-  }, 3500);
+    botCursor = (botCursor + batchSize) % BOTS.length;
+  }, 500);
 }
 
 // Kiểm tra nhân vật đi ngang qua bẫy vỏ chuối

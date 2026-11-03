@@ -127,11 +127,13 @@
 
     /* CẦU NẠI HÀ HÀO QUANG HUYỀN ẢO */
     @keyframes bridgeAura {
-      0%, 100% { filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.4)); }
-      50% { filter: drop-shadow(0 0 22px rgba(236, 72, 153, 0.7)) drop-shadow(0 0 35px rgba(245, 158, 11, 0.6)); }
+      0%, 100% { filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.5)); }
+      50% { filter: drop-shadow(0 0 22px rgba(236, 72, 153, 0.65)); }
     }
     .bridge-aura {
       animation: bridgeAura 4s ease-in-out infinite;
+      will-change: filter;
+      transform: translateZ(0);
     }
 
     /* VẠC DẦU SÔI SÙNG SỤC - BONG BÓNG TRÀO BỌT */
@@ -146,11 +148,12 @@
     .bubble-3 { animation: bubbleBoil 1.8s infinite ease-out 0.8s; }
 
     @keyframes flameFlicker {
-      0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.85; filter: drop-shadow(0 0 12px #f97316); }
-      50% { transform: scale(1.12) rotate(2deg); opacity: 1; filter: drop-shadow(0 0 24px #ef4444); }
+      0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.85; filter: drop-shadow(0 0 8px #f97316); }
+      50% { transform: scale(1.08) rotate(2deg); opacity: 1; filter: drop-shadow(0 0 16px #ef4444); }
     }
     .flame-flicker {
       animation: flameFlicker 0.7s infinite alternate ease-in-out;
+      will-change: transform, filter;
     }
 
     /* CÂY ĐÀO TIÊN ĐUNG ĐƯA & ĐÀO RƠI NHẤP NHÁY */
@@ -163,11 +166,12 @@
       animation: treeSway 6s ease-in-out infinite;
     }
     @keyframes peachGlow {
-      0%, 100% { filter: drop-shadow(0 0 6px #f472b6) drop-shadow(0 0 12px #f59e0b); }
-      50% { filter: drop-shadow(0 0 16px #fb7185) drop-shadow(0 0 24px #fbbf24); }
+      0%, 100% { filter: drop-shadow(0 0 8px #f472b6); }
+      50% { filter: drop-shadow(0 0 18px #fb7185); }
     }
     .peach-glow {
-      animation: peachGlow 2s ease-in-out infinite;
+      animation: peachGlow 2.5s ease-in-out infinite;
+      will-change: filter;
     }
 
     /* QUÁN CANH MẠNH BÀ - LÀN KHÓI TRÔI BỀNH BỒNG */
@@ -202,17 +206,23 @@
 
     /* MÂY NGŨ SẮC LƯỢN LỜ */
     @keyframes rainbowCloud {
-      0%, 100% { filter: drop-shadow(0 0 8px #fef08a) drop-shadow(0 0 16px #93c5fd); }
-      50% { filter: drop-shadow(0 0 16px #f472b6) drop-shadow(0 0 24px #a78bfa); }
+      0%, 100% { filter: drop-shadow(0 0 8px #fef08a); }
+      50% { filter: drop-shadow(0 0 16px #93c5fd); }
     }
-    .rainbow-cloud { animation: rainbowCloud 3s ease-in-out infinite; }
+    .rainbow-cloud {
+      animation: rainbowCloud 3.5s ease-in-out infinite;
+      will-change: filter;
+    }
 
     /* HẮC LÔI MA TÔN CUỒN CUỘN */
     @keyframes demonSparks {
-      0%, 100% { filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 16px #ef4444); }
-      50% { filter: drop-shadow(0 0 20px #d946ef) drop-shadow(0 0 30px #b91c1c); }
+      0%, 100% { filter: drop-shadow(0 0 10px #a855f7); }
+      50% { filter: drop-shadow(0 0 22px #ef4444); }
     }
-    .demon-glow { animation: demonSparks 0.75s ease-in-out infinite; }
+    .demon-glow {
+      animation: demonSparks 1.2s ease-in-out infinite;
+      will-change: filter;
+    }
 
     /* KHIÊN PHẢN NGHIỆP */
     @keyframes shieldSpin {
@@ -259,11 +269,12 @@
 
     /* HÀO QUANG NAM CỰC TIÊN ÔNG */
     @keyframes immortalGlow {
-      0%, 100% { filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 16px #fde047); }
-      50% { filter: drop-shadow(0 0 18px #38bdf8) drop-shadow(0 0 30px #f59e0b); }
+      0%, 100% { filter: drop-shadow(0 0 10px #38bdf8); }
+      50% { filter: drop-shadow(0 0 20px #f59e0b); }
     }
     .immortal-glow {
       animation: immortalGlow 3s ease-in-out infinite;
+      will-change: filter;
     }
 
     /* COOLDOWN SWEEP MASK TRÊN ICON SKILL */
@@ -1632,20 +1643,21 @@
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
-        ctx.shadowBlur = this.radius * 2.5;
-        ctx.shadowColor = this.isHeaven ? '#fde047' : '#ef4444';
         ctx.fill();
-        ctx.shadowBlur = 0;
       }
     }
 
-    for (let i = 0; i < 55; i++) particles.push(new Particle());
+    // Tối ưu hiệu năng: Giảm số hạt mượt mà, tắt shadowBlur tốn GPU, tạm dừng khi tab ẩn
+    const particleCount = window.innerWidth < 768 ? 24 : 38;
+    for (let i = 0; i < particleCount; i++) particles.push(new Particle());
 
     function animateParticles() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      for (const p of particles) {
-        p.update();
-        p.draw();
+      if (!document.hidden) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update();
+          particles[i].draw();
+        }
       }
       requestAnimationFrame(animateParticles);
     }
@@ -2957,9 +2969,13 @@
 
       el = document.createElement('div');
       el.id = `player_${p.id}`;
-      el.className = 'absolute pointer-events-auto cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out flex flex-col items-center';
+      // Tối ưu hiệu năng: Dùng transition cụ thể cho left/top, will-change và contain để cô lập layout reflow
+      el.className = 'absolute pointer-events-auto cursor-pointer transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center';
       el.style.left = `${p.x}%`;
       el.style.top = `${p.y}%`;
+      el.style.transition = 'left 700ms ease-out, top 700ms ease-out';
+      el.style.willChange = 'left, top';
+      el.style.contain = 'layout style';
 
       // Thứ bậc z-index động theo chiều sâu 2.5D:
       // Bản thân: 35; người khác & bots: 20 + Math.floor(y / 4)
@@ -3132,7 +3148,7 @@
       if (!el) return;
 
       const baseZ = p.id === myId ? 35 : (20 + Math.floor(Math.min(90, Math.max(10, p.y)) / 4));
-      el.style.zIndex = baseZ;
+      if (el.style.zIndex != baseZ) el.style.zIndex = baseZ;
 
       const avatarBox = document.getElementById(`avatar_${p.id}`);
       if (avatarBox) {
@@ -3141,7 +3157,8 @@
       }
 
       const hasSpeed = p.speedBoostUntil && Date.now() < p.speedBoostUntil;
-      el.style.transitionDuration = hasSpeed ? '350ms' : '700ms';
+      const targetDuration = hasSpeed ? '350ms' : '700ms';
+      if (el.style.transitionDuration !== targetDuration) el.style.transitionDuration = targetDuration;
 
       if (p.danceUntil && Date.now() < p.danceUntil) {
         el.classList.add('is-dancing');
