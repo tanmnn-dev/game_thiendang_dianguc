@@ -320,25 +320,38 @@ function spawnPeaches() {
 }
 
 // =================================================================
-// NPC BÀ LÃO MẠNH BÀ & HỆ THỐNG NHIỆM VỤ ẨN (QUESTS)
+// NPC TAM GIỚI: BÀ LÃO MẠNH BÀ & NAM CỰC TIÊN ÔNG
 // =================================================================
 const NPC_MANH_BA = {
   id: 'npc_manh_ba',
   name: 'Bà Lão Mạnh Bà',
   title: 'Trấn Giữ Quán Canh Tam Giới',
   avatar: '👵🍵',
+  realm: 'hell',
   x: 22,
-  y: 58
+  y: 58,
+  quote: 'Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng giải nghiệp cho!'
+};
+
+const NPC_TIEN_ONG = {
+  id: 'npc_tien_ong',
+  name: 'Nam Cực Tiên Ông',
+  title: 'Chưởng Quản Tiên Đơn Thăng Thiên',
+  avatar: '👴✨',
+  realm: 'heaven',
+  x: 22,
+  y: 38,
+  quote: 'Đạo hữu chí tại thanh hư, chăm chỉ tích lũy công đức để sớm cưỡi mây đạp gió thăng thiên!'
 };
 
 const QUEST_TEMPLATES = [
   {
     id: 'q_troll',
     title: 'Cấu Véo & Chọc Ghẹo',
-    desc: 'Thi triển 3 lần kỹ năng troll hoặc kéo giò/ném sét người khác',
+    desc: 'Thi triển 3 lần kỹ năng troll hoặc kéo giò/ném sét/cảm hóa người khác hoặc Bots',
     targetType: 'troll',
     target: 3,
-    reward: 50,
+    reward: 65,
     quote: 'Mấy đứa trên trần hay dưới âm cãi nhau nhức đầu quá, mày đi chọc ghẹo 3 đứa cho vui cửa vui nhà đi con!'
   },
   {
@@ -347,7 +360,7 @@ const QUEST_TEMPLATES = [
     desc: 'Tụng kinh hoặc Gõ mõ 8 lần để tích lũy công đức sám hối',
     targetType: 'farm',
     target: 8,
-    reward: 45,
+    reward: 60,
     quote: 'Ngồi không riết rỉ sét tay chân! Mau tụng kinh hoặc gõ mõ 8 lần rửa nghiệp giùm ta!'
   },
   {
@@ -356,7 +369,7 @@ const QUEST_TEMPLATES = [
     desc: 'Đến Quán Canh uống cạn 1 bát Canh Mạnh Bà quên sự đời',
     targetType: 'soup',
     target: 1,
-    reward: 40,
+    reward: 50,
     quote: 'Mẻ canh mới nấu thơm lừng lựng! Mau uống thử một bát rồi quên hết phiền não trần gian đi con!'
   },
   {
@@ -365,7 +378,7 @@ const QUEST_TEMPLATES = [
     desc: 'Nhảy vào Vạc Dầu Sôi hoặc Hái Đào Tiên trải nghiệm đặc trưng cõi 1 lần',
     targetType: 'boil',
     target: 1,
-    reward: 55,
+    reward: 75,
     quote: 'Người ngợm toàn mùi trần tục, mau tới công trình cõi mình (Vạc Dầu hoặc Cây Đào Tiên) thử sức một chút đi con!'
   },
   {
@@ -374,7 +387,7 @@ const QUEST_TEMPLATES = [
     desc: 'Dùng Thánh Quang (H4+) hoặc Xích Câu Hồn (D5+) tương tác chéo cõi 2 lần',
     targetType: 'cross',
     target: 2,
-    reward: 60,
+    reward: 85,
     quote: 'Hai cõi Thiên Đàng - Địa Ngục dạo này im ắng quá! Dùng chiêu chéo cõi khuấy đảo 2 lần xem nào!'
   },
   {
@@ -383,7 +396,7 @@ const QUEST_TEMPLATES = [
     desc: 'Dâng 1 sớ hối lỗi chân thành hoặc thả 1 hoa đăng cầu phước',
     targetType: 'confess_lantern',
     target: 1,
-    reward: 45,
+    reward: 55,
     quote: 'Viết cho ta xem một câu hối lỗi chân thành, hoặc thả hoa đăng cầu an cho cõi này đi con!'
   }
 ];
@@ -1103,6 +1116,8 @@ io.on('connection', (socket) => {
       redPackets: Array.from(activeRedPackets.values()),
       floatingItems: Array.from(activeFloatingItems.values()),
       npcManhBa: NPC_MANH_BA,
+      npcTienOng: NPC_TIEN_ONG,
+      npcs: [NPC_MANH_BA, NPC_TIEN_ONG],
       quest: player.quest,
       controlPoints: {
         peach_tree: CONTROL_POINTS.peach_tree,
@@ -1425,6 +1440,7 @@ io.on('connection', (socket) => {
 
       updateKarma(target, 5, `Được ${player.name} ban phước`, player);
       updateKarma(player, 2, 'Ban phước cho chúng sinh');
+      updateQuestProgress(player, 'troll');
 
       io.emit('world:effect', {
         type: 'bless',
@@ -2475,26 +2491,52 @@ io.on('connection', (socket) => {
   });
 
   // =================================================================
-  // 11. NHIỆM VỤ ẨN BÀ LÃO MẠNH BÀ (QUEST SYSTEM)
+  // 11. NHIỆM VỤ ẨN TAM GIỚI: BÀ LÃO MẠNH BÀ & NAM CỰC TIÊN ÔNG
   // =================================================================
-  socket.on('quest:get', () => {
+  socket.on('quest:get', (data = {}) => {
     const player = players.get(socket.id);
     if (!player) return;
-    socket.emit('quest:data', { quest: player.quest, npc: NPC_MANH_BA });
+    const requestedNpcId = data.npcId;
+    let npc = player.realm === 'heaven' ? NPC_TIEN_ONG : NPC_MANH_BA;
+    if (requestedNpcId === 'npc_tien_ong') npc = NPC_TIEN_ONG;
+    if (requestedNpcId === 'npc_manh_ba') npc = NPC_MANH_BA;
+
+    socket.emit('quest:data', {
+      quest: player.quest,
+      npc,
+      npcManhBa: NPC_MANH_BA,
+      npcTienOng: NPC_TIEN_ONG
+    });
   });
 
-  socket.on('quest:claim', () => {
+  socket.on('quest:reroll', () => {
+    const player = players.get(socket.id);
+    if (!player) return;
+    const now = Date.now();
+    if (player.lastQuestRerollAt && (now - player.lastQuestRerollAt < 15000)) {
+      const remaining = Math.ceil((15000 - (now - player.lastQuestRerollAt)) / 1000);
+      socket.emit('system:toast', { message: `Vui lòng chờ ${remaining}s nữa để đổi nhiệm vụ khác!` });
+      return;
+    }
+    player.lastQuestRerollAt = now;
+    const oldId = player.quest ? player.quest.id : null;
+    player.quest = createRandomQuest(oldId);
+    socket.emit('quest:updated', { quest: player.quest, completedNow: false });
+    socket.emit('system:toast', { message: `Đã đổi sang nhiệm vụ mới: [${player.quest.title}]!` });
+  });
+
+  socket.on('quest:claim', (data = {}) => {
     const player = players.get(socket.id);
     if (!player) return;
 
     if (!player.quest) {
       player.quest = createRandomQuest();
-      socket.emit('quest:data', { quest: player.quest, npc: NPC_MANH_BA });
+      socket.emit('quest:data', { quest: player.quest, npc: player.realm === 'heaven' ? NPC_TIEN_ONG : NPC_MANH_BA });
       return;
     }
 
     if (!player.quest.isCompleted) {
-      socket.emit('system:toast', { message: 'Nhiệm vụ chưa hoàn thành! Mau đi làm tiếp đi con!' });
+      socket.emit('system:toast', { message: 'Nhiệm vụ chưa hoàn thành! Mau đi hoàn thành tiếp đi!' });
       return;
     }
 
@@ -2505,12 +2547,25 @@ io.on('connection', (socket) => {
 
     player.quest.isClaimed = true;
     const baseReward = player.quest.reward;
-    const isHell = player.realm === 'hell';
-    const actualDelta = isHell ? -baseReward : baseReward;
-    const completedTitle = player.quest.title;
 
-    // Phân định phần thưởng chuẩn 2 cõi: Thiên Đàng tăng Công Đức, Địa Ngục tăng Ma Lực
-    updateKarma(player, actualDelta, `Hoàn thành nhiệm vụ [${completedTitle}] từ Bà Lão Mạnh Bà`);
+    // Hỗ trợ 2 nhánh rõ ràng:
+    // 'demonic' (Ma Đạo): Trừ điểm âm (-50..-90) để cày Ma Tôn / Vô Thường
+    // 'righteous' (Chính Đạo): Cộng điểm dương (+50..+90) để thăng Tiên
+    let isDemonic = false;
+    if (data && data.path === 'demonic') {
+      isDemonic = true;
+    } else if (data && data.path === 'righteous') {
+      isDemonic = false;
+    } else {
+      isDemonic = player.realm === 'hell';
+    }
+
+    const actualDelta = isDemonic ? -baseReward : baseReward;
+    const completedTitle = player.quest.title;
+    const giverName = player.realm === 'heaven' ? 'Nam Cực Tiên Ông' : 'Bà Lão Mạnh Bà';
+
+    // Phân định phần thưởng chuẩn 2 nhánh
+    updateKarma(player, actualDelta, `Hoàn thành nhiệm vụ [${completedTitle}] (${isDemonic ? 'Nhánh Ma Đạo' : 'Nhánh Chính Đạo'}) từ ${giverName}`);
 
     // Hiệu ứng pháo hoa chúc mừng
     io.emit('world:effect', {
@@ -2521,8 +2576,10 @@ io.on('connection', (socket) => {
       rewardKarma: actualDelta
     });
 
-    const rewardLabel = isHell ? `+${baseReward} Ma Lực (-${baseReward} Karma)` : `+${baseReward} Công Đức (+${baseReward} Karma)`;
-    broadcastKillFeed(`🎉 ${player.name} vừa hoàn thành nhiệm vụ [${completedTitle}], nhận thưởng nóng ${rewardLabel} từ Mạnh Bà!`, '🎁');
+    const rewardLabel = isDemonic
+      ? `-${baseReward} Ma Lực để tôi luyện ma thân`
+      : `+${baseReward} Công Đức để thăng thiên`;
+    broadcastKillFeed(`🎉 ${player.name} vừa hoàn thành nhiệm vụ [${completedTitle}], nhận ${rewardLabel} từ ${giverName}!`, '🎁');
 
     // Tự động cấp nhiệm vụ mới ngẫu nhiên
     const newQuest = createRandomQuest();
@@ -2531,7 +2588,8 @@ io.on('connection', (socket) => {
     socket.emit('quest:claimed', {
       reward: actualDelta,
       baseReward,
-      isHell,
+      isHell: isDemonic,
+      path: isDemonic ? 'demonic' : 'righteous',
       title: completedTitle,
       newQuest
     });

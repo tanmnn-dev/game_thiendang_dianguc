@@ -248,6 +248,24 @@
       animation: radialBloom 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
 
+    /* NO-SCROLLBAR CHO MOBILE & SKILL HOTBAR */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* HÀO QUANG NAM CỰC TIÊN ÔNG */
+    @keyframes immortalGlow {
+      0%, 100% { filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 16px #fde047); }
+      50% { filter: drop-shadow(0 0 18px #38bdf8) drop-shadow(0 0 30px #f59e0b); }
+    }
+    .immortal-glow {
+      animation: immortalGlow 3s ease-in-out infinite;
+    }
+
     /* COOLDOWN SWEEP MASK TRÊN ICON SKILL */
     .cd-sweep {
       position: absolute;
@@ -426,6 +444,24 @@
           <div class="absolute bottom-4 left-6 text-xs peach-glow" style="animation-delay: -1.4s;">🍑</div>
         </div>
       </div>
+    </div>
+
+    <!-- NPC NAM CỰC TIÊN ÔNG (THIÊN ĐÀNG: x 22%, y 38%) -->
+    <div id="npcTienOng" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center z-25 transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-all duration-300 group" style="left: 22%; top: 38%;">
+      <!-- Bong bóng nhiệm vụ tiên đạo -->
+      <div id="npcTienOngBubble" class="mb-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-sky-400 via-amber-300 to-yellow-400 text-slate-950 font-black text-[10px] shadow-[0_0_15px_#38bdf8] animate-bounce flex items-center space-x-1 border border-yellow-200">
+        <span>✨</span>
+        <span id="npcTienOngBubbleText">Nhiệm Vụ Tiên Đạo [?]</span>
+      </div>
+      <!-- Avatar NPC Tiên Ông -->
+      <div class="relative w-13 h-13 rounded-full bg-gradient-to-b from-sky-400 via-amber-200 to-yellow-500 border-2 border-yellow-300 flex items-center justify-center text-3xl shadow-xl npc-bobbing immortal-glow">
+        <span>👴</span>
+        <span class="absolute -bottom-1 -right-1 text-xs">✨</span>
+      </div>
+      <!-- Tên NPC -->
+      <span class="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 border border-sky-400/60 text-[9px] font-extrabold text-sky-300 whitespace-nowrap shadow-md">
+        Nam Cực Tiên Ông
+      </span>
     </div>
 
     <!-- 2. QUÁN CANH MẠNH BÀ (ĐẦU CẦU: x 20%, y 60%) -->
@@ -617,33 +653,80 @@
   </div>
 
   <!-- ========================================================= -->
+  <!-- MINI QUEST TRACKER GÓC PHẢI TRÊN (DESKTOP & MOBILE) -->
+  <!-- ========================================================= -->
+  <div id="miniQuestTracker" class="absolute top-44 right-3 z-30 pointer-events-auto w-48 sm:w-56 bg-slate-900/90 backdrop-blur-md p-2.5 rounded-2xl border border-amber-500/40 shadow-2xl transition-all duration-200">
+    <div class="flex items-center justify-between gap-1 pb-1.5 border-b border-slate-700/60">
+      <div class="flex items-center space-x-1 text-[10px] font-black text-amber-300 truncate cursor-pointer hover:underline" id="miniQuestHeader" title="Bấm để xem chi tiết nhiệm vụ">
+        <span id="miniQuestIcon">📜</span>
+        <span id="miniQuestTitle" class="truncate">Nhiệm Vụ Tu Tập</span>
+      </div>
+      <div class="flex items-center space-x-1 shrink-0">
+        <button id="btnMiniQuestReroll" title="Đổi nhiệm vụ khác (cooldown 15s)" class="text-xs text-slate-400 hover:text-amber-300 active:scale-95 transition px-1">
+          🔄
+        </button>
+        <button id="btnMiniQuestOpen" title="Mở chi tiết nhiệm vụ" class="text-xs text-slate-400 hover:text-white active:scale-95 transition px-1">
+          ℹ️
+        </button>
+      </div>
+    </div>
+    <div class="mt-1.5 space-y-1">
+      <div class="flex items-center justify-between text-[9px] font-bold text-slate-300">
+        <span id="miniQuestDescShort" class="truncate max-w-[125px] sm:max-w-[145px]">Đang tải nhiệm vụ...</span>
+        <span id="miniQuestProgressText" class="font-mono text-amber-400">0/0</span>
+      </div>
+      <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
+        <div id="miniQuestProgressBar" class="bg-gradient-to-r from-amber-400 to-yellow-300 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+      </div>
+      <!-- Nút nhận thưởng nhấp nháy trên tracker khi hoàn thành -->
+      <button id="btnMiniQuestClaim" class="hidden w-full mt-1.5 py-1 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black text-[10px] shadow-[0_0_12px_#f59e0b] animate-pulse active:scale-95 transition flex items-center justify-center space-x-1">
+        <span>🎁</span>
+        <span>NHẬN THƯỞNG NGAY!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
   <!-- RPG SKILL DOCK & ACTION BAR KIỂU GAME Ở ĐÁY MÀN HÌNH -->
   <!-- ========================================================= -->
-  <footer id="bottomDock" class="hidden absolute bottom-3 left-3 right-3 z-30 flex flex-col items-center gap-2 pointer-events-none">
+  <footer id="bottomDock" class="hidden absolute bottom-2 left-2 right-2 md:bottom-3 md:left-3 md:right-3 z-30 flex flex-col items-center gap-1.5 md:gap-2 pointer-events-none">
 
     <!-- KHU VỰC THANH KỸ NĂNG TIẾN HÓA (EVOLUTION SKILL HOTBAR) -->
-    <div class="pointer-events-auto flex items-center gap-2 bg-slate-950/90 backdrop-blur-xl px-4 py-2 rounded-2xl border-2 border-amber-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.8)] overflow-x-auto max-w-full">
-      <div class="text-[10px] font-black text-amber-400 uppercase tracking-widest px-1 hidden md:block">
+    <div class="pointer-events-auto flex items-center gap-1.5 md:gap-2 bg-slate-950/90 backdrop-blur-xl px-2.5 md:px-4 py-1.5 md:py-2 rounded-2xl border-2 border-amber-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.8)] overflow-x-auto no-scrollbar max-w-full touch-pan-x">
+      <div class="text-[9px] md:text-[10px] font-black text-amber-400 uppercase tracking-widest px-1 hidden lg:block shrink-0">
         KỸ NĂNG<br>TIẾN HÓA
       </div>
-      <div id="evolutionSkillBar" class="flex items-center gap-2">
+      <div id="evolutionSkillBar" class="flex items-center gap-1.5 md:gap-2 flex-nowrap">
         <!-- Render 6 skill slots kiểu RPG -->
       </div>
     </div>
 
     <!-- DÒNG HÀNH ĐỘNG CƠ BẢN & KHUNG CHAT BONG BÓNG -->
-    <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl">
+    <div class="w-full flex items-center justify-between gap-1.5 md:gap-2 max-w-4xl relative">
       <!-- Nút Hành Động Cơ Bản -->
-      <div id="actionButtonGroup" class="pointer-events-auto flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-xl">
+      <div id="actionButtonGroup" class="pointer-events-auto flex items-center gap-1 md:gap-2 bg-slate-900/90 backdrop-blur-md p-1 md:p-1.5 rounded-2xl border border-slate-700 shadow-xl overflow-x-auto no-scrollbar shrink">
         <!-- Render động nút cơ bản -->
       </div>
 
-      <!-- Khung Nhập Chat Nhanh -->
-      <div class="pointer-events-auto flex items-center bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700 shadow-xl w-full sm:w-80">
-        <input id="inputChat" type="text" maxlength="70" placeholder="Gõ chat bong bóng (Enter)..." class="w-full bg-transparent px-1 text-xs text-white placeholder-slate-400 focus:outline-none">
-        <button id="btnSendChat" class="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black rounded-xl text-xs active:scale-95 transition shadow-md">
-          Gửi
-        </button>
+      <!-- Nút Toggle Chat trên Mobile -->
+      <button id="btnMobileChatToggle" class="pointer-events-auto md:hidden p-2 rounded-2xl bg-slate-900/90 border border-slate-700 text-amber-300 font-black text-xs flex items-center space-x-1 shadow-xl active:scale-95 shrink-0">
+        <span>💬</span>
+        <span class="text-[10px]">Chat</span>
+        <span id="chatUnreadDot" class="hidden w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+      </button>
+
+      <!-- Khung Nhập Chat (Desktop: hiển thị inline; Mobile: popup drawer khi bật) -->
+      <div id="chatDrawer" class="hidden md:flex pointer-events-auto fixed md:static bottom-20 left-4 right-4 md:bottom-auto md:left-auto md:right-auto z-40 md:z-auto bg-slate-900/95 md:bg-slate-900/90 backdrop-blur-xl md:backdrop-blur-md p-2 md:px-3 md:py-1.5 rounded-2xl border border-amber-500/50 md:border-slate-700 shadow-2xl md:shadow-xl w-auto md:w-80 flex-col md:flex-row gap-1.5 md:gap-0">
+        <div class="flex items-center justify-between md:hidden pb-1 border-b border-slate-800 text-[10px] font-bold text-slate-300">
+          <span>💬 BONG BÓNG CHAT NHANH</span>
+          <button id="btnCloseMobileChat" class="text-slate-400 hover:text-white px-1">✕</button>
+        </div>
+        <div class="flex items-center w-full">
+          <input id="inputChat" type="text" maxlength="70" placeholder="Gõ chat bong bóng (Enter)..." class="w-full bg-transparent px-1 text-xs text-white placeholder-slate-400 focus:outline-none">
+          <button id="btnSendChat" class="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black rounded-xl text-xs active:scale-95 transition shadow-md shrink-0">
+            Gửi
+          </button>
+        </div>
       </div>
     </div>
   </footer>
@@ -895,25 +978,25 @@
     </div>
   </div>
 
-  <!-- MODAL NHIỆM VỤ ẨN (BÀ LÃO MẠNH BÀ) -->
+  <!-- MODAL NHIỆM VỤ ẨN (BÀ LÃO MẠNH BÀ & NAM CỰC TIÊN ÔNG) -->
   <div id="modalQuest" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
-    <div class="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 border-2 border-amber-400/70 rounded-3xl w-full max-w-md p-5 shadow-2xl relative">
+    <div id="modalQuestCard" class="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 border-2 border-amber-400/70 rounded-3xl w-full max-w-md p-5 shadow-2xl relative">
       <button id="btnCloseQuest" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
 
       <div class="flex items-center space-x-3 mb-4 border-b border-purple-500/30 pb-3">
-        <div class="w-12 h-12 rounded-full bg-gradient-to-b from-amber-400 to-yellow-600 border border-yellow-200 flex items-center justify-center text-2xl shadow-lg">
+        <div id="questGiverAvatar" class="w-12 h-12 rounded-full bg-gradient-to-b from-amber-400 to-yellow-600 border border-yellow-200 flex items-center justify-center text-2xl shadow-lg shrink-0">
           👵
         </div>
         <div>
-          <h3 class="text-sm font-black text-amber-300 uppercase tracking-wider">QUÁN CANH TAM GIỚI</h3>
-          <p class="text-[11px] text-purple-300 font-medium">Bà Lão Mạnh Bà giao nhiệm vụ giải nghiệp</p>
+          <h3 id="questModalHeaderTitle" class="text-sm font-black text-amber-300 uppercase tracking-wider">QUÁN CANH TAM GIỚI</h3>
+          <p id="questModalHeaderSubtitle" class="text-[11px] text-purple-300 font-medium">Bà Lão Mạnh Bà giao nhiệm vụ giải nghiệp</p>
         </div>
       </div>
 
-      <!-- Lời thoại của Mạnh Bà -->
-      <div class="p-3 bg-purple-900/30 rounded-2xl border border-purple-400/30 mb-4 relative">
+      <!-- Lời thoại của NPC giao việc -->
+      <div id="questQuoteBox" class="p-3 bg-purple-900/30 rounded-2xl border border-purple-400/30 mb-4 relative">
         <span class="text-xs text-purple-200 italic leading-relaxed" id="questQuote">
-          "Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng cho ít công đức!"
+          "Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng giải nghiệp cho!"
         </span>
       </div>
 
@@ -922,7 +1005,7 @@
         <div class="flex items-center justify-between">
           <span id="questTitle" class="text-xs font-black text-amber-300">...</span>
           <span id="questRewardBadge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
-            +50 Karma
+            50 Karma
           </span>
         </div>
         <p id="questDesc" class="text-[11px] text-slate-300">...</p>
@@ -939,11 +1022,40 @@
         </div>
       </div>
 
-      <!-- Action Button -->
-      <div>
-        <button id="btnClaimQuest" disabled class="w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed">
-          <span>🎁 Chưa Hoàn Thành</span>
-        </button>
+      <!-- Action Area: 2 Nhánh Nhận Thưởng hoặc Trạng Thái Chưa Xong -->
+      <div class="space-y-2.5">
+        <!-- Vùng 2 Nhánh Nhận Thưởng (hiển thị khi isCompleted && !isClaimed) -->
+        <div id="questClaimBranches" class="hidden space-y-2">
+          <div class="text-[10px] font-extrabold text-center text-amber-200">
+            🎉 ĐÃ XONG! CHỌN CON ĐƯỜNG LĨNH THƯỞNG CỦA BẠN:
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <button id="btnClaimRighteous" class="py-2.5 px-2 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-300 text-slate-950 shadow-[0_0_15px_#f59e0b] active:scale-95 animate-pulse">
+              <span>✨</span>
+              <span id="txtClaimRighteous">Chính Đạo (+Karma)</span>
+            </button>
+            <button id="btnClaimDemonic" class="py-2.5 px-2 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-gradient-to-r from-rose-700 via-red-600 to-rose-800 hover:from-rose-600 text-white shadow-[0_0_15px_#f43f5e] active:scale-95 animate-pulse">
+              <span>🔥</span>
+              <span id="txtClaimDemonic">Ma Đạo (-Karma)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Trạng Thái Mặc Định khi Chưa Xong hoặc Đã Nhận -->
+        <div id="questClaimDefault">
+          <button id="btnClaimQuest" disabled class="w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed">
+            <span>⏳ Chưa Hoàn Thành</span>
+          </button>
+        </div>
+
+        <!-- Đổi Nhiệm Vụ Khác (Hỗ trợ Cooldown 15s) -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80">
+          <span class="text-[10px] text-slate-400">Không thích nhiệm vụ này?</span>
+          <button id="btnRerollQuest" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-[10px] font-bold text-amber-300 border border-amber-500/30 flex items-center space-x-1 transition">
+            <span>🔄</span>
+            <span id="txtRerollQuest">Đổi Nhiệm Vụ Khác</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1584,23 +1696,61 @@
     const modalMirrorProfile = document.getElementById('modalMirrorProfile');
     const btnCloseMirrorProfile = document.getElementById('btnCloseMirrorProfile');
 
+    // Landmarks & NPCs
+    const landmarkPeachTree = document.getElementById('landmarkPeachTree');
+    const landmarkSoupShop = document.getElementById('landmarkSoupShop');
+    const landmarkCauldron = document.getElementById('landmarkCauldron');
+    const npcManhBa = document.getElementById('npcManhBa');
+    const npcQuestBubbleText = document.getElementById('npcQuestBubbleText');
+    const npcTienOng = document.getElementById('npcTienOng');
+    const npcTienOngBubbleText = document.getElementById('npcTienOngBubbleText');
+
     // Quest & Control Points State
     let currentQuest = null;
     let controlPointsData = null;
+    let rerollCooldownTimer = null;
+    let remainingRerollCd = 0;
 
     const btnQuest = document.getElementById('btnQuest');
     const badgeQuestReady = document.getElementById('badgeQuestReady');
     const modalQuest = document.getElementById('modalQuest');
     const btnCloseQuest = document.getElementById('btnCloseQuest');
-    const btnClaimQuest = document.getElementById('btnClaimQuest');
+    const questModalHeaderTitle = document.getElementById('questModalHeaderTitle');
+    const questModalHeaderSubtitle = document.getElementById('questModalHeaderSubtitle');
+    const questGiverAvatar = document.getElementById('questGiverAvatar');
     const questQuote = document.getElementById('questQuote');
     const questTitle = document.getElementById('questTitle');
     const questDesc = document.getElementById('questDesc');
     const questRewardBadge = document.getElementById('questRewardBadge');
     const questProgressText = document.getElementById('questProgressText');
     const questProgressBar = document.getElementById('questProgressBar');
-    const npcManhBa = document.getElementById('npcManhBa');
-    const npcQuestBubbleText = document.getElementById('npcQuestBubbleText');
+    const questClaimBranches = document.getElementById('questClaimBranches');
+    const questClaimDefault = document.getElementById('questClaimDefault');
+    const btnClaimRighteous = document.getElementById('btnClaimRighteous');
+    const btnClaimDemonic = document.getElementById('btnClaimDemonic');
+    const txtClaimRighteous = document.getElementById('txtClaimRighteous');
+    const txtClaimDemonic = document.getElementById('txtClaimDemonic');
+    const btnClaimQuest = document.getElementById('btnClaimQuest');
+    const btnRerollQuest = document.getElementById('btnRerollQuest');
+    const txtRerollQuest = document.getElementById('txtRerollQuest');
+
+    // Mini Quest Tracker ngoài màn hình chính
+    const miniQuestTracker = document.getElementById('miniQuestTracker');
+    const miniQuestHeader = document.getElementById('miniQuestHeader');
+    const miniQuestTitle = document.getElementById('miniQuestTitle');
+    const miniQuestDescShort = document.getElementById('miniQuestDescShort');
+    const miniQuestProgressText = document.getElementById('miniQuestProgressText');
+    const miniQuestProgressBar = document.getElementById('miniQuestProgressBar');
+    const btnMiniQuestClaim = document.getElementById('btnMiniQuestClaim');
+    const btnMiniQuestReroll = document.getElementById('btnMiniQuestReroll');
+    const btnMiniQuestOpen = document.getElementById('btnMiniQuestOpen');
+
+    // Mobile Chat Drawer Toggle
+    const btnMobileChatToggle = document.getElementById('btnMobileChatToggle');
+    const chatDrawer = document.getElementById('chatDrawer');
+    const btnCloseMobileChat = document.getElementById('btnCloseMobileChat');
+    const chatUnreadDot = document.getElementById('chatUnreadDot');
+
     const hudBuffBadge = document.getElementById('hudBuffBadge');
     const hudPeachStatus = document.getElementById('hudPeachStatus');
     const hudPeachBarHeaven = document.getElementById('hudPeachBarHeaven');
@@ -2012,7 +2162,9 @@
 
       socket.on('quest:claimed', (data) => {
         sound.playQuestComplete();
-        showToast(`🎁 Đã nhận thưởng +${data.reward} Karma từ Mạnh Bà!`);
+        const delta = data.reward >= 0 ? `+${data.reward}` : `${data.reward}`;
+        const sourceName = data.path === 'demonic' ? 'Bà Lão Mạnh Bà' : 'Nam Cực Tiên Ông';
+        showToast(`🎁 Đã nhận thưởng ${delta} Karma (${data.path === 'demonic' ? 'Nhánh Ma Đạo' : 'Nhánh Chính Đạo'}) từ ${sourceName}!`);
         updateQuestUI(data.quest);
       });
 
@@ -2026,11 +2178,29 @@
     }
 
     // -------------------------------------------------------------
-    // NHIỆM VỤ ẨN BÀ LÃO MẠNH BÀ & CỨ ĐIỂM TRANH CHẤP
+    // NHIỆM VỤ ẨN 2 NHÁNH & CỨ ĐIỂM TRANH CHẤP
     // -------------------------------------------------------------
-    function openQuestDialog() {
+    function openQuestDialog(source = 'auto') {
       if (socket) socket.emit('quest:get');
       modalQuest.classList.remove('hidden');
+
+      const isHeaven = myPlayer && myPlayer.realm === 'heaven';
+      if (questModalHeaderTitle && questModalHeaderSubtitle && questGiverAvatar) {
+        if (isHeaven) {
+          questGiverAvatar.textContent = '👴';
+          questGiverAvatar.className = 'w-12 h-12 rounded-full bg-gradient-to-b from-sky-400 to-yellow-500 border border-yellow-200 flex items-center justify-center text-2xl shadow-lg shrink-0';
+          questModalHeaderTitle.textContent = 'TIÊN ĐẠO CHÂN TRUYỀN';
+          questModalHeaderSubtitle.textContent = 'Nam Cực Tiên Ông truyền thụ bí kíp thăng hoa';
+          if (questQuoteBox) questQuoteBox.className = 'p-3 bg-sky-900/30 rounded-2xl border border-sky-400/30 mb-4 relative';
+        } else {
+          questGiverAvatar.textContent = '👵';
+          questGiverAvatar.className = 'w-12 h-12 rounded-full bg-gradient-to-b from-purple-800 to-slate-950 border border-purple-400 flex items-center justify-center text-2xl shadow-lg shrink-0';
+          questModalHeaderTitle.textContent = 'QUÁN CANH TAM GIỚI';
+          questModalHeaderSubtitle.textContent = 'Bà Lão Mạnh Bà giao việc giải trừ / tu luyện nghiệp';
+          if (questQuoteBox) questQuoteBox.className = 'p-3 bg-purple-900/30 rounded-2xl border border-purple-400/30 mb-4 relative';
+        }
+      }
+
       updateQuestModalUI();
     }
 
@@ -2038,22 +2208,58 @@
       if (!quest) return;
       currentQuest = quest;
       updateQuestModalUI();
+      updateMiniQuestTrackerUI();
 
+      const isDone = quest.isCompleted && !quest.isClaimed;
       if (badgeQuestReady) {
-        if (quest.isCompleted && !quest.isClaimed) {
-          badgeQuestReady.classList.remove('hidden');
-          if (npcQuestBubbleText) npcQuestBubbleText.textContent = '🎁 Nhận Thưởng!';
-        } else {
-          badgeQuestReady.classList.add('hidden');
-          if (npcQuestBubbleText) npcQuestBubbleText.textContent = 'Nhiệm Vụ Ẩn [?]';
-        }
+        if (isDone) badgeQuestReady.classList.remove('hidden');
+        else badgeQuestReady.classList.add('hidden');
+      }
+
+      if (npcQuestBubbleText) {
+        npcQuestBubbleText.textContent = isDone ? '🎁 Nhận Thưởng!' : 'Nhiệm Vụ Ẩn [?]';
+      }
+      if (npcTienOngBubbleText) {
+        npcTienOngBubbleText.textContent = isDone ? '🎁 Nhận Thưởng!' : 'Nhiệm Vụ Tiên Đạo [?]';
       }
 
       if (completedNow) {
         sound.playQuestComplete();
-        showToast(`🎉 HOÀN THÀNH NHIỆM VỤ [${quest.title}]! Hãy đến gặp Mạnh Bà nhận thưởng!`);
+        showToast(`🎉 HOÀN THÀNH NHIỆM VỤ [${quest.title}]! Mở bảng nhiệm vụ để chọn nhận thưởng!`);
         if (myPlayer) {
           showFloatingText(myPlayer.x, myPlayer.y - 4, '🎉 XONG NHIỆM VỤ! 🎁', 'text-yellow-300 font-black text-sm');
+        }
+      }
+    }
+
+    function updateMiniQuestTrackerUI() {
+      if (!currentQuest) {
+        if (miniQuestTitle) miniQuestTitle.textContent = 'Nhiệm Vụ Tu Tập';
+        if (miniQuestDescShort) miniQuestDescShort.textContent = 'Đang tải nhiệm vụ...';
+        if (miniQuestProgressText) miniQuestProgressText.textContent = '0/0';
+        if (miniQuestProgressBar) miniQuestProgressBar.style.width = '0%';
+        if (btnMiniQuestClaim) btnMiniQuestClaim.classList.add('hidden');
+        return;
+      }
+
+      if (miniQuestTitle) miniQuestTitle.textContent = currentQuest.title;
+      if (miniQuestDescShort) miniQuestDescShort.textContent = currentQuest.desc;
+      if (miniQuestProgressText) miniQuestProgressText.textContent = `${currentQuest.current}/${currentQuest.target}`;
+
+      const pct = Math.min(100, Math.round((currentQuest.current / currentQuest.target) * 100));
+      if (miniQuestProgressBar) {
+        miniQuestProgressBar.style.width = `${pct}%`;
+        const isHell = myPlayer && myPlayer.realm === 'hell';
+        miniQuestProgressBar.className = `${
+          isHell ? 'bg-gradient-to-r from-rose-600 to-red-400' : 'bg-gradient-to-r from-amber-400 to-yellow-300'
+        } h-full rounded-full transition-all duration-300`;
+      }
+
+      if (btnMiniQuestClaim) {
+        if (currentQuest.isCompleted && !currentQuest.isClaimed) {
+          btnMiniQuestClaim.classList.remove('hidden');
+        } else {
+          btnMiniQuestClaim.classList.add('hidden');
         }
       }
     }
@@ -2061,10 +2267,12 @@
     function updateQuestModalUI() {
       if (!currentQuest) {
         if (questTitle) questTitle.textContent = 'Đang nhận nhiệm vụ...';
-        if (questDesc) questDesc.textContent = 'Mạnh Bà đang lục sổ sinh tử tìm công việc giải nghiệp phù hợp cho bạn...';
+        if (questDesc) questDesc.textContent = 'Đang lục sổ sinh tử tìm công việc tu luyện phù hợp cho bạn...';
         if (questRewardBadge) questRewardBadge.textContent = '... Karma';
         if (questProgressText) questProgressText.textContent = '0 / 0';
         if (questProgressBar) questProgressBar.style.width = '0%';
+        if (questClaimBranches) questClaimBranches.classList.add('hidden');
+        if (questClaimDefault) questClaimDefault.classList.remove('hidden');
         if (btnClaimQuest) {
           btnClaimQuest.disabled = true;
           btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
@@ -2072,19 +2280,18 @@
         }
         return;
       }
-      const isHell = myPlayer && myPlayer.realm === 'hell';
-      const rewardLabel = isHell ? `+${currentQuest.reward} Ma Lực (-${currentQuest.reward} Karma)` : `+${currentQuest.reward} Công Đức (+${currentQuest.reward} Karma)`;
 
-      if (questQuote) questQuote.textContent = `"${currentQuest.quote || 'Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng cho ít công đức!'}"`;
+      const isHell = myPlayer && myPlayer.realm === 'hell';
+      const defaultQuote = isHell
+        ? 'Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng giải nghiệp cho!'
+        : 'Đạo hữu chí tại thanh hư, chăm chỉ tích lũy công đức để sớm cưỡi mây đạp gió thăng thiên!';
+
+      if (questQuote) questQuote.textContent = `"${currentQuest.quote || defaultQuote}"`;
       if (questTitle) questTitle.textContent = currentQuest.title;
       if (questDesc) questDesc.textContent = currentQuest.desc;
       if (questRewardBadge) {
-        questRewardBadge.textContent = rewardLabel;
-        questRewardBadge.className = `text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
-          isHell
-            ? 'bg-rose-950/70 text-rose-300 border-rose-500/50'
-            : 'bg-amber-400/20 text-amber-300 border-amber-400/40'
-        }`;
+        questRewardBadge.textContent = `±${currentQuest.reward} Karma (Tùy Nhánh)`;
+        questRewardBadge.className = 'text-[10px] font-extrabold px-2 py-0.5 rounded-full border bg-amber-400/20 text-amber-300 border-amber-400/40';
       }
       if (questProgressText) questProgressText.textContent = `${currentQuest.current} / ${currentQuest.target}`;
 
@@ -2096,25 +2303,66 @@
         } h-full rounded-full transition-all duration-300`;
       }
 
-      if (btnClaimQuest) {
-        if (currentQuest.isClaimed) {
+      if (currentQuest.isClaimed) {
+        if (questClaimBranches) questClaimBranches.classList.add('hidden');
+        if (questClaimDefault) questClaimDefault.classList.remove('hidden');
+        if (btnClaimQuest) {
           btnClaimQuest.disabled = true;
           btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
           btnClaimQuest.innerHTML = '<span>✅ Đã Nhận Thưởng</span>';
-        } else if (currentQuest.isCompleted) {
-          btnClaimQuest.disabled = false;
-          btnClaimQuest.className = `w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 ${
-            isHell
-              ? 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-700 hover:from-rose-500 text-white shadow-[0_0_20px_#f43f5e]'
-              : 'bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 text-slate-950 shadow-[0_0_20px_#f59e0b]'
-          } cursor-pointer animate-pulse`;
-          btnClaimQuest.innerHTML = `<span>🎁 Nhận Thưởng (${rewardLabel})</span>`;
-        } else {
+        }
+      } else if (currentQuest.isCompleted) {
+        if (questClaimBranches) questClaimBranches.classList.remove('hidden');
+        if (questClaimDefault) questClaimDefault.classList.add('hidden');
+        if (txtClaimRighteous) txtClaimRighteous.textContent = `Chính Đạo (+${currentQuest.reward} Karma)`;
+        if (txtClaimDemonic) txtClaimDemonic.textContent = `Ma Đạo (-${currentQuest.reward} Karma)`;
+      } else {
+        if (questClaimBranches) questClaimBranches.classList.add('hidden');
+        if (questClaimDefault) questClaimDefault.classList.remove('hidden');
+        if (btnClaimQuest) {
           btnClaimQuest.disabled = true;
           btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
           btnClaimQuest.innerHTML = `<span>⏳ Chưa Hoàn Thành (${currentQuest.current}/${currentQuest.target})</span>`;
         }
       }
+    }
+
+    function triggerRerollQuest() {
+      if (remainingRerollCd > 0) {
+        showToast(`⏳ Vui lòng chờ ${remainingRerollCd}s nữa để đổi nhiệm vụ khác!`, true);
+        return;
+      }
+      if (socket) {
+        socket.emit('quest:reroll');
+        startRerollCooldown(15);
+      }
+    }
+
+    function startRerollCooldown(seconds = 15) {
+      remainingRerollCd = seconds;
+      if (rerollCooldownTimer) clearInterval(rerollCooldownTimer);
+
+      const updateButtons = () => {
+        if (txtRerollQuest) {
+          txtRerollQuest.textContent = remainingRerollCd > 0 ? `Đổi Lại (${remainingRerollCd}s)` : 'Đổi Nhiệm Vụ Khác';
+        }
+        if (btnRerollQuest) btnRerollQuest.disabled = remainingRerollCd > 0;
+        if (btnMiniQuestReroll) {
+          btnMiniQuestReroll.disabled = remainingRerollCd > 0;
+          btnMiniQuestReroll.title = remainingRerollCd > 0 ? `Chờ ${remainingRerollCd}s để đổi` : 'Đổi nhiệm vụ khác';
+        }
+      };
+      updateButtons();
+
+      rerollCooldownTimer = setInterval(() => {
+        remainingRerollCd--;
+        if (remainingRerollCd <= 0) {
+          clearInterval(rerollCooldownTimer);
+          rerollCooldownTimer = null;
+          remainingRerollCd = 0;
+        }
+        updateButtons();
+      }, 1000);
     }
 
     function updateControlPointsUI(data) {
@@ -2207,12 +2455,43 @@
       }
     }
 
-    if (npcManhBa) {
-      npcManhBa.addEventListener('click', (e) => {
+    // Tách sự kiện Click Landmark & NPC khỏi Map Move
+    if (landmarkPeachTree) {
+      landmarkPeachTree.addEventListener('click', (e) => {
         e.stopPropagation();
+        closeRadialMenu();
+        showToast('🍑 Cây Đào Tiên Ngàn Năm: Chiếm giữ để nhận +1 Karma/5s cho toàn cõi!');
+      });
+    }
+    if (landmarkSoupShop) {
+      landmarkSoupShop.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRadialMenu();
         openQuestDialog();
       });
     }
+    if (landmarkCauldron) {
+      landmarkCauldron.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRadialMenu();
+        showToast('🔥 Vạc Dầu Sôi Sùng Sục: Chiếm giữ để đày ải và thanh tẩy nghiệp chướng!');
+      });
+    }
+    if (npcManhBa) {
+      npcManhBa.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRadialMenu();
+        openQuestDialog();
+      });
+    }
+    if (npcTienOng) {
+      npcTienOng.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeRadialMenu();
+        openQuestDialog();
+      });
+    }
+
     if (btnQuest) {
       btnQuest.addEventListener('click', () => openQuestDialog());
     }
@@ -2224,6 +2503,47 @@
         if (socket && currentQuest && currentQuest.isCompleted && !currentQuest.isClaimed) {
           socket.emit('quest:claim');
         }
+      });
+    }
+    if (btnClaimRighteous) {
+      btnClaimRighteous.addEventListener('click', () => {
+        if (socket && currentQuest && currentQuest.isCompleted && !currentQuest.isClaimed) {
+          socket.emit('quest:claim', { path: 'righteous' });
+        }
+      });
+    }
+    if (btnClaimDemonic) {
+      btnClaimDemonic.addEventListener('click', () => {
+        if (socket && currentQuest && currentQuest.isCompleted && !currentQuest.isClaimed) {
+          socket.emit('quest:claim', { path: 'demonic' });
+        }
+      });
+    }
+    if (btnRerollQuest) {
+      btnRerollQuest.addEventListener('click', () => triggerRerollQuest());
+    }
+    if (btnMiniQuestReroll) {
+      btnMiniQuestReroll.addEventListener('click', (e) => {
+        e.stopPropagation();
+        triggerRerollQuest();
+      });
+    }
+    if (btnMiniQuestClaim) {
+      btnMiniQuestClaim.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openQuestDialog();
+      });
+    }
+    if (btnMiniQuestOpen) {
+      btnMiniQuestOpen.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openQuestDialog();
+      });
+    }
+    if (miniQuestHeader) {
+      miniQuestHeader.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openQuestDialog();
       });
     }
 
@@ -2265,7 +2585,7 @@
 
         const btn = document.createElement('button');
         btn.id = `skill_slot_${tierData.skill}`;
-        btn.className = `relative w-12 h-12 md:w-13 md:h-13 rounded-2xl flex items-center justify-center text-xl transition-all duration-200 overflow-hidden shadow-lg ${
+        btn.className = `relative w-10 h-10 sm:w-12 sm:h-12 md:w-13 md:h-13 rounded-xl sm:rounded-2xl flex items-center justify-center text-lg sm:text-xl transition-all duration-200 overflow-hidden shadow-lg shrink-0 ${
           isUnlocked
             ? (isHeaven
                 ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 border-2 border-yellow-200 text-slate-950 active:scale-95 hover:brightness-110 shadow-[0_0_15px_rgba(250,204,21,0.7)] animate-pulse ring-2 ring-amber-300'
@@ -2590,14 +2910,35 @@
       }, 1000);
     }
 
-    // Chat
+    // Chat & Mobile Chat Drawer Toggle
     const inputChat = document.getElementById('inputChat');
     const btnSendChat = document.getElementById('btnSendChat');
+
+    if (btnMobileChatToggle && chatDrawer) {
+      btnMobileChatToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatDrawer.classList.toggle('hidden');
+        if (!chatDrawer.classList.contains('hidden')) {
+          if (chatUnreadDot) chatUnreadDot.classList.add('hidden');
+          inputChat.focus();
+        }
+      });
+    }
+    if (btnCloseMobileChat && chatDrawer) {
+      btnCloseMobileChat.addEventListener('click', (e) => {
+        e.stopPropagation();
+        chatDrawer.classList.add('hidden');
+      });
+    }
+
     function sendChat() {
       const msg = inputChat.value.trim();
       if (msg && socket) {
         socket.emit('player:chat', msg);
         inputChat.value = '';
+        if (window.innerWidth < 768 && chatDrawer) {
+          chatDrawer.classList.add('hidden');
+        }
       }
     }
     btnSendChat.addEventListener('click', sendChat);
@@ -2620,6 +2961,11 @@
       el.style.left = `${p.x}%`;
       el.style.top = `${p.y}%`;
 
+      // Thứ bậc z-index động theo chiều sâu 2.5D:
+      // Bản thân: 35; người khác & bots: 20 + Math.floor(y / 4)
+      const baseZ = p.id === myId ? 35 : (20 + Math.floor(Math.min(90, Math.max(10, p.y)) / 4));
+      el.style.zIndex = baseZ;
+
       // Thanh đếm ngược tắm vạc dầu
       const boilBar = document.createElement('div');
       boilBar.id = `boil_bar_${p.id}`;
@@ -2629,12 +2975,16 @@
       // Bong bóng chat có đuôi trỏ
       const bubble = document.createElement('div');
       bubble.id = `bubble_${p.id}`;
-      bubble.className = 'hidden mb-2 px-3 py-1.5 max-w-[170px] speech-bubble text-[11px] font-semibold rounded-2xl text-center break-words z-30 pointer-events-none';
+      bubble.className = 'hidden mb-2 px-3 py-1.5 max-w-[170px] speech-bubble text-[11px] font-semibold rounded-2xl text-center break-words z-40 pointer-events-none';
       el.appendChild(bubble);
 
-      // Thẻ tên và Cấp bậc
+      // Thẻ tên và Cấp bậc gọn gàng chống đè chữ
       const nameBadge = document.createElement('div');
-      nameBadge.className = 'flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-700 text-[10px] whitespace-nowrap mb-1 shadow-md';
+      nameBadge.className = `flex items-center space-x-1 px-1.5 py-0.5 rounded-full backdrop-blur-md text-[9px] md:text-[10px] whitespace-nowrap mb-0.5 shadow-md border ${
+        p.id === myId
+          ? 'bg-amber-950/90 border-amber-400 text-amber-200 ring-1 ring-amber-400/50'
+          : 'bg-slate-950/80 border-slate-700/80 text-slate-300'
+      }`;
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'font-extrabold text-slate-200';
@@ -2781,6 +3131,9 @@
       const el = document.getElementById(`player_${p.id}`);
       if (!el) return;
 
+      const baseZ = p.id === myId ? 35 : (20 + Math.floor(Math.min(90, Math.max(10, p.y)) / 4));
+      el.style.zIndex = baseZ;
+
       const avatarBox = document.getElementById(`avatar_${p.id}`);
       if (avatarBox) {
         if (p.x < oldX) avatarBox.style.transform = 'scaleX(-1)';
@@ -2817,7 +3170,7 @@
       renderPlayerElement(p);
     }
 
-    // Click bản đồ di chuyển
+    // Click bản đồ di chuyển (Thông minh bước ra bờ Cầu Nại Hà khi bấm cõi đối diện)
     const gameWorld = document.getElementById('gameWorld');
     gameWorld.addEventListener('click', (e) => {
       closeRadialMenu();
@@ -2827,20 +3180,29 @@
       const clickX = ((e.clientX - rect.left) / rect.width) * 100;
       const clickY = ((e.clientY - rect.top) / rect.height) * 100;
 
+      let targetX = clickX;
+      let targetY = clickY;
+
       if (myPlayer.realm === 'heaven') {
-        if (clickY < 12 || clickY > 44) {
-          showToast('Bạn đang ở Thiên Đàng! Hãy di chuyển trong cõi thanh tịnh.', true);
-          return;
+        if (clickY > 44) {
+          // Bấm sang Địa Ngục: tự động bước ra mép bắc Cầu Nại Hà ngóng nhìn
+          targetY = 43;
+          targetX = Math.max(15, Math.min(85, clickX));
+        } else if (clickY < 14) {
+          targetY = 14;
         }
       } else {
-        if (clickY < 56 || clickY > 88) {
-          showToast('Bạn đang ở Địa Ngục! Không thể tự bước qua Cầu Nại Hà.', true);
-          return;
+        if (clickY < 56) {
+          // Bấm sang Thiên Đàng: tự động bước ra mép nam Cầu Nại Hà ngóng nhìn
+          targetY = 57;
+          targetX = Math.max(15, Math.min(85, clickX));
+        } else if (clickY > 88) {
+          targetY = 88;
         }
       }
 
       createRippleEffect(e.clientX, e.clientY, myPlayer.realm === 'heaven');
-      socket.emit('player:move', { x: clickX, y: clickY });
+      socket.emit('player:move', { x: targetX, y: targetY });
     });
 
     function createRippleEffect(x, y, isHeaven) {

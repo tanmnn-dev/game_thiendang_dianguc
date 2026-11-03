@@ -4,6 +4,36 @@ Tất cả các thay đổi của dự án được ghi nhận tại đây theo 
 
 ---
 
+## v1.7.0 (2026-11-03) — Polish UI/UX, Mobile-First Responsive & Dual-Path Quest System
+
+### [NEW]
+- **NPC Nam Cực Tiên Ông (👴✨) Trên Cõi Thiên Đàng**:
+  - Tọa độ `x: 22, y: 38`, hiệu ứng hào quang tiên đạo `immortalGlow` và bong bóng nhiệm vụ tương tác `npcTienOngBubble`.
+  - Cung cấp nhiệm vụ tu tập tiên giới song hành cùng Mạnh Bà ở cõi âm.
+- **Mini Quest Tracker Ngoài Màn Hình Chính**:
+  - Hiển thị tiến trình nhiệm vụ trực quan góc phải trên, thanh progress bar mượt mà.
+  - Tích hợp nút `🎁 Nhận Thưởng` nhấp nháy pulse khi nhiệm vụ hoàn thành.
+  - Tích hợp nút `🔄 Đổi nhiệm vụ` với bộ đếm cooldown 15s chống spam trên cả client và server (`quest:reroll`).
+- **Hệ Thống Nhận Thưởng 2 Nhánh Cân Bằng (Dual-Path Reward)**:
+  - Cho phép người chơi tự do lựa chọn **Nhánh Chính Đạo (+50..85 Karma)** hoặc **Nhánh Ma Đạo (-50..85 Karma)** khi trả nhiệm vụ ở cả 2 cõi.
+  - Socket handler `quest:claim` xử lý bảo mật, cập nhật karma đúng nhánh và cấp phát danh hiệu tương ứng.
+- **Tự Động Clamp Di Chuyển Ra Mép Cầu Nại Hà**:
+  - Khi click vào lãnh thổ cõi đối diện, nhân vật tự động di chuyển ra mép bờ Cầu Nại Hà (`targetY: 43` đối với Thiên Đàng, `targetY: 57` đối với Địa Ngục) thay vì chặn lệnh hay bắn toast báo lỗi khó chịu.
+
+### [IMPROVE]
+- **Mobile-First Responsive Layout (<768px)**:
+  - Thanh kỹ năng cuộn ngang mượt mà ẩn scrollbar thô (`.no-scrollbar`), chống overflow màn hình nhỏ.
+  - Khung chat tách thành drawer có nút toggle bật/tắt trên mobile, tự đóng khi gửi tin tránh xung đột bàn phím ảo.
+  - Đóng và thu gọn các bảng dock phụ trợ trên màn hình cảm ứng.
+- **Tách Sự Kiện Click Khỏi Bản Đồ (`stopPropagation`)**:
+  - Ngăn chặn hoàn toàn việc click Avatar người chơi, Bot, NPC hoặc Landmark bị kích hoạt di chuyển map không mong muốn.
+- **Chống Đè Chữ & Sắp Xếp Z-Index Theo Chiều Sâu 2.5D**:
+  - Gán z-index động theo tọa độ Y (`z = 20 + Math.floor(y / 4)`).
+  - Nhân vật bản thân cố định `z-35`, bong bóng chat `z-40`, radial menu `z-50`.
+  - Nhãn tên người chơi mỏng nhẹ, bán trong suốt chống rối mắt khi tập trung đông người tại Cây Đào hoặc Vạc Dầu.
+
+---
+
 ## v1.6.0 (2026-11-03) — Faction War & Tug-of-War Recruitment (Đại Chiến Phe Phái, Chiêu Mộ Đổi Cõi & Tương Tác Kỹ Năng Trực Quan)
 
 ### [NEW]
