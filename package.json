@@ -1,0 +1,14 @@
+{
+  "name": "thien-dang-dia-nguc-online",
+  "version": "1.6.0",
+  "description": "Thiên Đàng & Địa Ngục Online - Real-time Multiplayer Web Game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "socket.io": "^4.8.1",
+    "ws": "^8.18.0"
+  }
+}

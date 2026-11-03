@@ -1,0 +1,3566 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Thiên Đàng & Địa Ngục Online</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #060913;
+      color: #fff;
+    }
+
+    /* RUNG LẮC MÀN HÌNH */
+    .screen-shake {
+      animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-3px, -1px, 0); }
+      20%, 80% { transform: translate3d(4px, 2px, 0); }
+      30%, 50%, 70% { transform: translate3d(-5px, -3px, 0); }
+      40%, 60% { transform: translate3d(5px, 3px, 0); }
+    }
+
+    /* BƯỚC ĐI NHÚN NHẢY CHIBI WOBBLE */
+    @keyframes walkWobble {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      25% { transform: translateY(-7px) rotate(-5deg); }
+      75% { transform: translateY(-7px) rotate(5deg); }
+    }
+    .is-walking {
+      animation: walkWobble 0.26s ease-in-out infinite !important;
+    }
+
+    /* NHẢY MÚA ÉP BUỘC / ZOMBIE */
+    @keyframes forcedDance {
+      0%, 100% { transform: translateY(0) rotate(-12deg) scale(1.08); }
+      50% { transform: translateY(-12px) rotate(12deg) scale(1.15); }
+    }
+    .is-dancing {
+      animation: forcedDance 0.32s ease-in-out infinite !important;
+    }
+
+    /* CHÁY ĐEN XÉM KHÓI */
+    @keyframes burntEffect {
+      0%, 100% { filter: grayscale(100%) brightness(0.2) contrast(200%); }
+      50% { filter: grayscale(100%) brightness(0.1) contrast(260%); }
+    }
+    .is-burnt {
+      animation: burntEffect 0.5s ease-in-out infinite;
+    }
+
+    /* BÓNG ĐỔ DƯỚI CHÂN NHÂN VẬT */
+    .player-shadow {
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 38px;
+      height: 12px;
+      background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0) 75%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      transition: transform 0.2s ease;
+    }
+    .is-walking + .player-shadow {
+      transform: translateX(-50%) scale(0.85);
+    }
+
+    /* BONG BÓNG CHAT CÓ ĐUÔI TRỎ VÀO ĐẦU */
+    .speech-bubble {
+      position: relative;
+      background: rgba(15, 23, 42, 0.94);
+      color: #f8fafc;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 10px rgba(56, 189, 248, 0.2);
+      transition: opacity 0.35s ease, transform 0.35s ease;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-width: 7px 7px 0 7px;
+      border-style: solid;
+      border-color: rgba(15, 23, 42, 0.94) transparent transparent transparent;
+    }
+    .speech-bubble.is-penalty {
+      background: rgba(225, 29, 72, 0.95);
+      border-color: #f43f5e;
+      color: #fff;
+      box-shadow: 0 0 20px rgba(225, 29, 72, 0.6);
+    }
+    .speech-bubble.is-penalty::after {
+      border-top-color: rgba(225, 29, 72, 0.95);
+    }
+
+    /* SÔNG VONG XUYÊN - GỢN SÓNG UỐN LƯỢN NƯỚC CHẢY */
+    @keyframes riverFlow {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .river-waves-1 {
+      animation: riverFlow 18s linear infinite;
+    }
+    .river-waves-2 {
+      animation: riverFlow 11s linear infinite reverse;
+    }
+
+    /* CẦU NẠI HÀ HÀO QUANG HUYỀN ẢO */
+    @keyframes bridgeAura {
+      0%, 100% { filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.4)); }
+      50% { filter: drop-shadow(0 0 22px rgba(236, 72, 153, 0.7)) drop-shadow(0 0 35px rgba(245, 158, 11, 0.6)); }
+    }
+    .bridge-aura {
+      animation: bridgeAura 4s ease-in-out infinite;
+    }
+
+    /* VẠC DẦU SÔI SÙNG SỤC - BONG BÓNG TRÀO BỌT */
+    @keyframes bubbleBoil {
+      0% { transform: translateY(0) scale(0.6); opacity: 0; }
+      40% { opacity: 0.9; }
+      80% { transform: translateY(-24px) scale(1.2); opacity: 0.8; }
+      100% { transform: translateY(-32px) scale(1.4); opacity: 0; }
+    }
+    .bubble-1 { animation: bubbleBoil 1.6s infinite ease-out; }
+    .bubble-2 { animation: bubbleBoil 2.1s infinite ease-out 0.4s; }
+    .bubble-3 { animation: bubbleBoil 1.8s infinite ease-out 0.8s; }
+
+    @keyframes flameFlicker {
+      0%, 100% { transform: scale(1) rotate(-1deg); opacity: 0.85; filter: drop-shadow(0 0 12px #f97316); }
+      50% { transform: scale(1.12) rotate(2deg); opacity: 1; filter: drop-shadow(0 0 24px #ef4444); }
+    }
+    .flame-flicker {
+      animation: flameFlicker 0.7s infinite alternate ease-in-out;
+    }
+
+    /* CÂY ĐÀO TIÊN ĐUNG ĐƯA & ĐÀO RƠI NHẤP NHÁY */
+    @keyframes treeSway {
+      0%, 100% { transform: rotate(0deg); }
+      50% { transform: rotate(1.5deg); }
+    }
+    .tree-sway {
+      transform-origin: bottom center;
+      animation: treeSway 6s ease-in-out infinite;
+    }
+    @keyframes peachGlow {
+      0%, 100% { filter: drop-shadow(0 0 6px #f472b6) drop-shadow(0 0 12px #f59e0b); }
+      50% { filter: drop-shadow(0 0 16px #fb7185) drop-shadow(0 0 24px #fbbf24); }
+    }
+    .peach-glow {
+      animation: peachGlow 2s ease-in-out infinite;
+    }
+
+    /* QUÁN CANH MẠNH BÀ - LÀN KHÓI TRÔI BỀNH BỒNG */
+    @keyframes steamRise {
+      0% { transform: translateY(0) scale(0.8); opacity: 0; }
+      30% { opacity: 0.6; }
+      70% { opacity: 0.3; }
+      100% { transform: translateY(-38px) scale(1.5) translateX(6px); opacity: 0; }
+    }
+    .steam-puff-1 { animation: steamRise 3s infinite ease-out; }
+    .steam-puff-2 { animation: steamRise 3.5s infinite ease-out 1.2s; }
+
+    /* CÁNH THIÊN THẦN VỖ NHỊP */
+    @keyframes wingFlapL {
+      0%, 100% { transform: scaleX(1) rotate(0deg); }
+      50% { transform: scaleX(0.75) rotate(14deg); }
+    }
+    @keyframes wingFlapR {
+      0%, 100% { transform: scaleX(1) rotate(0deg); }
+      50% { transform: scaleX(0.75) rotate(-14deg); }
+    }
+    .wing-l { transform-origin: right center; animation: wingFlapL 0.6s ease-in-out infinite; }
+    .wing-r { transform-origin: left center; animation: wingFlapR 0.6s ease-in-out infinite; }
+
+    /* RỒNG VÀNG BAY LƯỢN ORBIT QUANH NGỌC HOÀNG */
+    @keyframes dragonOrbit {
+      0% { transform: rotate(0deg) translateX(36px) rotate(0deg) scale(0.95); }
+      50% { transform: rotate(180deg) translateX(40px) rotate(-180deg) scale(1.15); }
+      100% { transform: rotate(360deg) translateX(36px) rotate(-360deg) scale(0.95); }
+    }
+    .dragon-orbit { animation: dragonOrbit 3.8s linear infinite; }
+
+    /* MÂY NGŨ SẮC LƯỢN LỜ */
+    @keyframes rainbowCloud {
+      0%, 100% { filter: drop-shadow(0 0 8px #fef08a) drop-shadow(0 0 16px #93c5fd); }
+      50% { filter: drop-shadow(0 0 16px #f472b6) drop-shadow(0 0 24px #a78bfa); }
+    }
+    .rainbow-cloud { animation: rainbowCloud 3s ease-in-out infinite; }
+
+    /* HẮC LÔI MA TÔN CUỒN CUỘN */
+    @keyframes demonSparks {
+      0%, 100% { filter: drop-shadow(0 0 8px #a855f7) drop-shadow(0 0 16px #ef4444); }
+      50% { filter: drop-shadow(0 0 20px #d946ef) drop-shadow(0 0 30px #b91c1c); }
+    }
+    .demon-glow { animation: demonSparks 0.75s ease-in-out infinite; }
+
+    /* KHIÊN PHẢN NGHIỆP */
+    @keyframes shieldSpin {
+      0% { transform: rotate(0deg); filter: drop-shadow(0 0 10px #38bdf8); }
+      100% { transform: rotate(360deg); filter: drop-shadow(0 0 22px #818cf8); }
+    }
+    .shield-reflect { animation: shieldSpin 3s linear infinite; }
+
+    /* HỐ ĐEN VŨ TRỤ */
+    @keyframes blackHoleSpin {
+      from { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.16); }
+      to { transform: rotate(360deg) scale(1); }
+    }
+    .black-hole-anim { animation: blackHoleSpin 2.2s linear infinite; }
+
+    /* NHẬT THỰC MA GIỚI */
+    @keyframes eclipseFade {
+      0% { opacity: 0; }
+      12% { opacity: 0.88; }
+      88% { opacity: 0.88; }
+      100% { opacity: 0; }
+    }
+    .eclipse-overlay { animation: eclipseFade 8s forwards ease-in-out; }
+
+    /* RADIAL CONTEXT MENU BLOOM POP-IN */
+    @keyframes radialBloom {
+      0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+      70% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
+      100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    }
+    .radial-bloom {
+      animation: radialBloom 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    /* COOLDOWN SWEEP MASK TRÊN ICON SKILL */
+    .cd-sweep {
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(0, 0, 0, 0.75);
+      clip-path: polygon(50% 50%, 50% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%, 50% 0%);
+      pointer-events: none;
+    }
+
+    /* SÓNG ÂM GÕ MÕ FEVER */
+    @keyframes wavePulse {
+      0% { transform: scale(0.5); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .soundwave-anim { animation: wavePulse 0.6s ease-out forwards; }
+
+    /* CHỮ BAY LÊN VÀ MỜ DẦN */
+    @keyframes riseUpFade {
+      0% { transform: translateY(0) scale(0.85); opacity: 1; }
+      100% { transform: translateY(-56px) scale(1.18); opacity: 0; }
+    }
+    .rise-fade { animation: riseUpFade 1.3s forwards ease-out; }
+
+    /* BÀ LÃO MẠNH BÀ & BONG BÓNG NHIỆM VỤ */
+    @keyframes npcBobbing {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+    .npc-bobbing {
+      animation: npcBobbing 2.5s ease-in-out infinite;
+    }
+    @keyframes questGlow {
+      0%, 100% { filter: drop-shadow(0 0 6px #f59e0b) drop-shadow(0 0 12px #fbbf24); }
+      50% { filter: drop-shadow(0 0 16px #f59e0b) drop-shadow(0 0 24px #fde047); }
+    }
+    .quest-glow {
+      animation: questGlow 1.8s ease-in-out infinite;
+    }
+
+    /* KHU VỰC TRANH CHẤP (CONTROL ZONES) */
+    @keyframes pulseControlZone {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.35; }
+      50% { transform: translate(-50%, -50%) scale(1.04); opacity: 0.65; }
+    }
+    .control-zone-pulse {
+      animation: pulseControlZone 3s ease-in-out infinite;
+    }
+
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="w-full h-full relative overflow-hidden select-none bg-slate-950">
+
+  <!-- OVERLAY NHẬT THỰC MA GIỚI -->
+  <div id="eclipseOverlay" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-purple-950/95 via-black/95 to-red-950/95 pointer-events-none flex flex-col items-center justify-center">
+    <div class="text-7xl animate-pulse mb-3">🌑</div>
+    <div class="text-2xl md:text-3xl font-black text-purple-300 tracking-widest drop-shadow-[0_0_20px_#c084fc]">NHẬT THỰC MA GIỚI ĐANG THỐNG TRỊ</div>
+    <div class="text-sm text-rose-300 mt-2 font-bold tracking-wide">Toàn bộ sinh linh tam giới bị ép nhảy Zombie trong 8 giây!</div>
+  </div>
+
+  <!-- CANVAS NỀN ĐA TẦNG: SAO TRỜI & TÀN LỬA CHÂN THỰC -->
+  <canvas id="bgCanvas" class="absolute inset-0 w-full h-full z-0 pointer-events-none"></canvas>
+
+  <!-- LỚP KHÔNG GIAN BẢN ĐỒ THẾ GIỚI (WORLD CONTAINER) -->
+  <div id="gameWorld" class="absolute inset-0 w-full h-full z-10 overflow-hidden cursor-crosshair">
+
+    <!-- 1. KHU VỰC THIÊN ĐÀNG (0% -> 45%) -->
+    <div id="realmHeavenArea" class="absolute top-0 left-0 w-full h-[45%] pointer-events-auto bg-gradient-to-b from-sky-950/50 via-amber-100/10 to-indigo-900/15">
+      <!-- Banner Cõi -->
+      <div class="absolute top-4 left-6 flex items-center space-x-2 text-amber-200/75 text-xs font-bold uppercase tracking-widest bg-slate-900/60 backdrop-blur-md px-3 py-1 rounded-full border border-amber-400/25 shadow-lg">
+        <span class="text-base">🪷</span>
+        <span>Cõi Thiên Đàng • Thanh Tịnh & Hào Quang (Karma &ge; 0)</span>
+      </div>
+
+      <!-- Mây tiên trôi nhẹ nhàng -->
+      <div class="absolute inset-0 pointer-events-none opacity-35 overflow-hidden">
+        <div class="absolute -top-12 left-1/4 w-[480px] h-36 bg-gradient-to-r from-amber-200/20 via-sky-200/25 to-transparent blur-3xl rounded-full"></div>
+        <div class="absolute top-10 right-16 w-96 h-28 bg-gradient-to-r from-white/20 via-amber-100/20 to-purple-200/20 blur-2xl rounded-full"></div>
+      </div>
+    </div>
+
+    <!-- 2. SÔNG VONG XUYÊN & CẦU NẠI HÀ (45% -> 55%) -->
+    <div id="riverBoundary" class="absolute top-[45%] left-0 w-full h-[10%] pointer-events-none overflow-hidden flex items-center justify-center bg-gradient-to-b from-indigo-950/80 via-slate-950 to-purple-950/80 border-y border-purple-500/30">
+
+      <!-- Lớp Sóng Nước Sông Vong Xuyên 1 -->
+      <div class="absolute inset-0 flex river-waves-1 opacity-45 pointer-events-none">
+        <svg class="h-full w-[200vw] flex-shrink-0" preserveAspectRatio="none" viewBox="0 0 1200 120">
+          <path d="M0,0 C150,90 350,-40 500,45 C650,130 900,10 1200,60 L1200,120 L0,120 Z" fill="url(#riverGrad1)" />
+          <defs>
+            <linearGradient id="riverGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.6"/>
+              <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#ec4899" stop-opacity="0.6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <!-- Lớp Sóng Nước Sông Vong Xuyên 2 -->
+      <div class="absolute inset-0 flex river-waves-2 opacity-35 pointer-events-none">
+        <svg class="h-full w-[200vw] flex-shrink-0" preserveAspectRatio="none" viewBox="0 0 1200 120">
+          <path d="M0,50 C200,10 400,110 600,40 C800,-30 1000,80 1200,30 L1200,120 L0,120 Z" fill="url(#riverGrad2)" />
+          <defs>
+            <linearGradient id="riverGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#6366f1" stop-opacity="0.5"/>
+              <stop offset="50%" stop-color="#a855f7" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#f43f5e" stop-opacity="0.5"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <!-- CÂY CẦU NẠI HÀ HUYỀN THOẠI (Ở CHÍNH GIỮA SÔNG) -->
+      <div class="relative z-10 w-80 md:w-[460px] h-12 flex items-center justify-center bridge-aura">
+        <!-- Lan can đá chạm khắc & Đèn lồng 2 đầu cầu -->
+        <div class="absolute -left-3 text-lg drop-shadow-[0_0_8px_#fbbf24]">🏮</div>
+        <div class="absolute -right-3 text-lg drop-shadow-[0_0_8px_#f43f5e]">🏮</div>
+
+        <!-- Thân cầu đá vòm cổ kính -->
+        <div class="w-full h-7 rounded-full bg-gradient-to-r from-amber-600 via-purple-700 to-rose-700 p-0.5 shadow-2xl flex items-center justify-center">
+          <div class="w-full h-full rounded-full bg-slate-950/85 backdrop-blur-md flex items-center justify-center px-4 border border-purple-400/40">
+            <span class="text-[11px] md:text-xs font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-purple-200 to-rose-200">
+              🌉 CẦU NẠI HÀ • RANH GIỚI NGHIỆP BÁO [-3000 .. +3000]
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. KHU VỰC ĐỊA NGỤC (55% -> 100%) -->
+    <div id="realmHellArea" class="absolute top-[55%] left-0 w-full h-[45%] pointer-events-auto bg-gradient-to-b from-purple-950/30 via-red-950/50 to-black">
+      <!-- Banner Cõi -->
+      <div class="absolute bottom-4 left-6 flex items-center space-x-2 text-rose-400/75 text-xs font-bold uppercase tracking-widest bg-slate-900/60 backdrop-blur-md px-3 py-1 rounded-full border border-red-500/25 shadow-lg">
+        <span class="text-base">🔥</span>
+        <span>Cõi Địa Ngục • Lửa Đỏ & Nghiệp Chướng (Karma &lt; 0)</span>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- KHU VỰC TRANH CHẤP (CONTROL ZONES: CÂY ĐÀO TIÊN & VẠC DẦU) -->
+    <!-- ========================================================= -->
+    <div id="controlZonesContainer" class="absolute inset-0 pointer-events-none z-10">
+      <!-- Zone Cây Đào Tiên: x 78%, y 24%, bán kính 14% -> đường kính 28% -->
+      <div id="zonePeachTree" class="absolute rounded-full border-2 border-dashed border-slate-500/50 control-zone-pulse flex items-center justify-center pointer-events-none transition-colors duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]" style="left: 78%; top: 24%; width: 28vmin; height: 28vmin; transform: translate(-50%, -50%);">
+        <span id="zonePeachLabel" class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-900/85 border border-slate-600 text-slate-300">🍑 Trung Lập</span>
+      </div>
+      <!-- Zone Vạc Dầu Sôi: x 78%, y 72%, bán kính 14% -> đường kính 28% -->
+      <div id="zoneCauldron" class="absolute rounded-full border-2 border-dashed border-slate-500/50 control-zone-pulse flex items-center justify-center pointer-events-none transition-colors duration-500 shadow-[0_0_30px_rgba(255,255,255,0.1)]" style="left: 78%; top: 72%; width: 28vmin; height: 28vmin; transform: translate(-50%, -50%);">
+        <span id="zoneCauldronLabel" class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-900/85 border border-slate-600 text-slate-300">🔥 Trung Lập</span>
+      </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- 3 CÔNG TRÌNH TƯƠNG TÁC SỐNG ĐỘNG (RICH VISUAL LANDMARKS) -->
+    <!-- ========================================================= -->
+
+    <!-- 1. CÂY ĐÀO TIÊN NGÀN NĂM (THIÊN ĐÀNG: x 80%, y 22%) -->
+    <div id="landmarkPeachTree" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center z-15 transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-all duration-300 group" style="left: 80%; top: 22%;">
+      <!-- Bảng tên công trình -->
+      <div class="px-2.5 py-0.5 rounded-full bg-slate-900/80 border border-pink-400/50 text-[10px] font-extrabold text-pink-200 backdrop-blur-md shadow-lg mb-1 flex items-center space-x-1 group-hover:border-pink-300">
+        <span>🍑</span>
+        <span>Cây Đào Tiên</span>
+      </div>
+
+      <!-- Đồ họa Cội Đào Cổ Thụ (SVG & CSS) -->
+      <div class="relative w-24 h-24 flex items-center justify-center tree-sway">
+        <!-- Tán lá đào hồng thắm bồng bềnh -->
+        <div class="absolute inset-1 rounded-full bg-gradient-to-tr from-pink-600 via-rose-400 to-amber-300 opacity-80 blur-md"></div>
+        <div class="w-20 h-20 rounded-full bg-gradient-to-b from-pink-400 via-rose-500 to-amber-600/80 border-2 border-pink-300/60 shadow-2xl flex items-center justify-center relative overflow-hidden">
+          <!-- Gốc cây cổ thụ -->
+          <div class="text-4xl filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">🌳</div>
+          <!-- Quả đào vàng óng trên cành -->
+          <div class="absolute top-2 left-3 text-xs peach-glow">🍑</div>
+          <div class="absolute top-4 right-3 text-xs peach-glow" style="animation-delay: -0.8s;">🍑</div>
+          <div class="absolute bottom-4 left-6 text-xs peach-glow" style="animation-delay: -1.4s;">🍑</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. QUÁN CANH MẠNH BÀ (ĐẦU CẦU: x 20%, y 60%) -->
+    <div id="landmarkSoupShop" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center z-15 transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-all duration-300 group" style="left: 20%; top: 60%;">
+      <!-- Bảng tên quán trà -->
+      <div class="px-2.5 py-0.5 rounded-full bg-slate-900/85 border border-purple-400/50 text-[10px] font-extrabold text-purple-200 backdrop-blur-md shadow-lg mb-1 flex items-center space-x-1 group-hover:border-purple-300">
+        <span>🍵</span>
+        <span>Quán Canh Mạnh Bà</span>
+      </div>
+
+      <!-- Đồ họa Quán Trà & Nồi Canh Nghi ngút Khói -->
+      <div class="relative w-20 h-20 flex items-center justify-center">
+        <!-- Khói bốc lên từ nồi canh -->
+        <div class="absolute -top-3 left-6 text-base text-purple-300 pointer-events-none steam-puff-1">💨</div>
+        <div class="absolute -top-4 right-6 text-sm text-pink-300 pointer-events-none steam-puff-2">💨</div>
+
+        <!-- Mái lều tranh & Bàn trà -->
+        <div class="w-16 h-16 rounded-2xl bg-gradient-to-b from-purple-900/90 via-slate-900 to-black border-2 border-purple-500/60 shadow-2xl flex flex-col items-center justify-center relative overflow-hidden">
+          <div class="absolute -top-2 w-full h-4 bg-gradient-to-r from-amber-700 via-amber-800 to-amber-900 rounded-t border-b border-amber-600"></div>
+          <div class="text-3xl mt-1 drop-shadow-[0_2px_10px_#a855f7]">🍲</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NPC BÀ LÃO MẠNH BÀ (QUÁN CANH: x 22%, y 58%) -->
+    <div id="npcManhBa" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center z-25 transform -translate-x-1/2 -translate-y-1/2 hover:scale-110 transition-all duration-300 group" style="left: 22%; top: 58%;">
+      <!-- Bong bóng nhiệm vụ lơ lửng -->
+      <div id="npcQuestBubble" class="mb-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 font-black text-[10px] shadow-[0_0_15px_#f59e0b] animate-bounce flex items-center space-x-1 border border-yellow-200">
+        <span>👵</span>
+        <span id="npcQuestBubbleText">Nhiệm Vụ Ẩn [?]</span>
+      </div>
+      <!-- Avatar NPC -->
+      <div class="relative w-13 h-13 rounded-full bg-gradient-to-b from-purple-800 to-slate-950 border-2 border-amber-400 flex items-center justify-center text-3xl shadow-xl npc-bobbing quest-glow">
+        <span>👵</span>
+        <span class="absolute -bottom-1 -right-1 text-xs">🍵</span>
+      </div>
+      <!-- Tên NPC -->
+      <span class="mt-1 px-2 py-0.5 rounded-md bg-slate-950/90 border border-purple-400/60 text-[9px] font-extrabold text-amber-300 whitespace-nowrap shadow-md">
+        Bà Lão Mạnh Bà
+      </span>
+    </div>
+
+    <!-- 3. VẠC DẦU SÔI SÙNG SỤC (ĐỊA NGỤC: x 80%, y 76%) -->
+    <div id="landmarkCauldron" class="absolute pointer-events-auto cursor-pointer flex flex-col items-center z-15 transform -translate-x-1/2 -translate-y-1/2 hover:scale-105 transition-all duration-300 group" style="left: 80%; top: 76%;">
+      <!-- Bảng tên vạc dầu -->
+      <div class="px-2.5 py-0.5 rounded-full bg-slate-900/85 border border-red-500/50 text-[10px] font-extrabold text-rose-200 backdrop-blur-md shadow-lg mb-1 flex items-center space-x-1 group-hover:border-rose-400">
+        <span>🔥</span>
+        <span>Vạc Dầu Sôi Sùng Sục</span>
+      </div>
+
+      <!-- Đồ họa Vạc Đồng Lớn & Bong bóng sôi sùng sục -->
+      <div class="relative w-22 h-22 flex items-center justify-center">
+        <!-- Lửa địa ngục bập bùng dưới đáy vạc -->
+        <div class="absolute -bottom-2 text-2xl flame-flicker">🔥</div>
+
+        <!-- Thân vạc đồng cổ -->
+        <div class="w-18 h-18 rounded-full bg-gradient-to-t from-black via-red-950 to-amber-700/90 border-2 border-amber-500/80 shadow-[0_0_25px_#ef4444] flex items-center justify-center relative overflow-visible">
+          <!-- Bọt nước dầu sôi bắn tung tóe -->
+          <div class="absolute top-1 left-3 w-2 h-2 rounded-full bg-amber-300 bubble-1"></div>
+          <div class="absolute top-2 right-4 w-2.5 h-2.5 rounded-full bg-yellow-400 bubble-2"></div>
+          <div class="absolute top-0 right-2 w-1.5 h-1.5 rounded-full bg-orange-400 bubble-3"></div>
+
+          <span class="text-3xl animate-pulse">♨️</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LAYER CHỨA BẪY VỎ CHUỐI & BAO LÌ XÌ TIÊN -->
+    <div id="trapsContainer" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- LAYER CHỨA QUẢ ĐÀO TIÊN ĐANG RƠI TRÊN MAP -->
+    <div id="peachesContainer" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- LAYER CHỨA CÁC NHÂN VẬT -->
+    <div id="playersContainer" class="absolute inset-0 pointer-events-none"></div>
+
+    <!-- LAYER CHỨA VẬT PHẨM BAY & HIỆU ỨNG THẾ GIỚI -->
+    <div id="effectsContainer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+
+    <!-- LAYER MENU TỎA TRÒN (RADIAL CONTEXT MENU) -->
+    <div id="radialMenuContainer" class="absolute inset-0 pointer-events-none z-40 overflow-hidden"></div>
+
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- THANH TOP BAR: CÂN BẰNG THẾ GIỚI & PROFILE PLAYER -->
+  <!-- ========================================================= -->
+  <header class="absolute top-3 left-3 right-3 z-30 flex flex-col md:flex-row items-center justify-between gap-2 bg-slate-900/85 backdrop-blur-lg px-4 py-2.5 rounded-2xl border border-slate-700/60 shadow-2xl">
+
+    <!-- Cân Bằng Cõi -->
+    <div class="flex items-center space-x-3 w-full md:w-auto">
+      <div class="flex items-center space-x-1.5 font-black text-xs md:text-sm tracking-tight text-amber-300">
+        <span class="text-base md:text-lg">⚖️</span>
+        <span class="hidden sm:inline">CÂN BẰNG CÕI</span>
+      </div>
+
+      <!-- Thanh đo đối kháng Thiên Đàng vs Địa Ngục -->
+      <div class="flex-1 md:w-64 bg-slate-950 rounded-full h-5 p-0.5 flex overflow-hidden border border-slate-700/70 shadow-inner">
+        <div id="barHeaven" class="bg-gradient-to-r from-amber-400 to-sky-400 h-full rounded-l-full transition-all duration-500 flex items-center justify-start pl-2 text-[10px] font-bold text-slate-950" style="width: 50%;">
+          😇 <span id="txtHeavenCount" class="ml-1">3</span>
+        </div>
+        <div id="barHell" class="bg-gradient-to-r from-rose-500 to-red-600 h-full rounded-r-full transition-all duration-500 flex items-center justify-end pr-2 text-[10px] font-bold text-white" style="width: 50%;">
+          <span id="txtHellCount" class="mr-1">3</span> 😈
+        </div>
+      </div>
+    </div>
+
+    <!-- Thông Tin Người Chơi & Điều Khiển -->
+    <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+      <!-- Badge người chơi -->
+      <div id="userBadge" class="hidden items-center space-x-2 bg-slate-800/90 px-3 py-1 rounded-xl border border-slate-600 text-xs shadow-md">
+        <span id="badgeRealmIcon" class="text-base">🙂</span>
+        <span id="badgeName" class="font-extrabold text-slate-200 max-w-[90px] truncate">...</span>
+        <span class="text-slate-500">|</span>
+        <span id="badgeTierTitle" class="font-bold text-amber-300 text-[11px]">Người Thường</span>
+        <span class="text-slate-500">|</span>
+        <span id="badgeKarma" class="font-black text-amber-400 font-mono">0</span>
+      </div>
+
+      <button id="btnQuest" title="Nhiệm Vụ Ẩn Bà Lão Mạnh Bà" class="px-2.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 active:scale-95 text-xs text-amber-300 border border-amber-500/50 flex items-center space-x-1 transition shadow-sm relative">
+        <span>👵</span>
+        <span class="hidden sm:inline font-bold">Nhiệm Vụ</span>
+        <span id="badgeQuestReady" class="hidden absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping"></span>
+      </button>
+
+      <button id="btnEvolutionBook" title="Sổ Tay Tiến Hóa 14 Bậc" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-amber-300 border border-amber-500/30 flex items-center space-x-1 transition shadow-sm">
+        <span>📖</span>
+        <span class="hidden sm:inline font-semibold">Sổ Tay</span>
+      </button>
+
+      <button id="btnInvite" title="Sao chép link mời bạn bè" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-sky-300 border border-sky-500/30 flex items-center space-x-1 transition shadow-sm">
+        <span>🔗</span>
+        <span class="hidden sm:inline font-semibold">Mời Bạn</span>
+      </button>
+
+      <button id="btnLeaderboard" title="Bảng Phong Thần" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-xs text-amber-300 border border-amber-500/30 flex items-center space-x-1 transition shadow-sm">
+        <span>🏆</span>
+        <span class="hidden sm:inline font-semibold">Phong Thần</span>
+      </button>
+
+      <button id="btnAudioToggle" title="Bật/Tắt âm thanh" class="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-sm border border-slate-600 transition shadow-sm">
+        <span id="iconAudio">🔊</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- NHẬT KÝ TAM GIỚI (LIVE KILL-FEED) -->
+  <div id="killFeedContainer" class="absolute top-16 left-4 z-20 flex flex-col space-y-1.5 pointer-events-none max-w-sm"></div>
+
+  <!-- CONTROL POINTS HUD (CỨ ĐIỂM TRANH CHẤP & BUFF X2) -->
+  <div id="controlPointsHud" class="absolute top-16 right-4 z-20 flex flex-col space-y-2 pointer-events-auto bg-slate-900/90 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-slate-700/80 shadow-2xl min-w-[210px] text-xs">
+    <div class="flex items-center justify-between border-b border-slate-700/50 pb-1.5 text-[11px] font-black text-slate-300">
+      <span class="flex items-center space-x-1">
+        <span>🚩</span>
+        <span>CỨ ĐIỂM TRANH CHẤP</span>
+      </span>
+      <span id="hudBuffBadge" class="hidden px-2 py-0.5 rounded-full bg-amber-400/25 text-amber-300 border border-amber-400/60 text-[9px] font-black animate-pulse">⚡ BUFF x2</span>
+    </div>
+
+    <!-- Cây Đào Tiên -->
+    <div class="space-y-1">
+      <div class="flex items-center justify-between text-[10px]">
+        <span class="font-bold flex items-center space-x-1">
+          <span>🍑</span>
+          <span class="text-slate-200">Cây Đào Tiên</span>
+        </span>
+        <span id="hudPeachStatus" class="font-extrabold text-slate-400">Trung Lập</span>
+      </div>
+      <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden flex border border-slate-800">
+        <div id="hudPeachBarHeaven" class="bg-sky-400 h-full transition-all duration-300" style="width: 50%;"></div>
+        <div id="hudPeachBarHell" class="bg-rose-500 h-full transition-all duration-300" style="width: 50%;"></div>
+      </div>
+    </div>
+
+    <!-- Vạc Dầu Sôi -->
+    <div class="space-y-1">
+      <div class="flex items-center justify-between text-[10px]">
+        <span class="font-bold flex items-center space-x-1">
+          <span>🔥</span>
+          <span class="text-slate-200">Vạc Dầu Sôi</span>
+        </span>
+        <span id="hudCauldronStatus" class="font-extrabold text-slate-400">Trung Lập</span>
+      </div>
+      <div class="w-full bg-slate-950 rounded-full h-1.5 overflow-hidden flex border border-slate-800">
+        <div id="hudCauldronBarHeaven" class="bg-sky-400 h-full transition-all duration-300" style="width: 50%;"></div>
+        <div id="hudCauldronBarHell" class="bg-rose-500 h-full transition-all duration-300" style="width: 50%;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================= -->
+  <!-- RPG SKILL DOCK & ACTION BAR KIỂU GAME Ở ĐÁY MÀN HÌNH -->
+  <!-- ========================================================= -->
+  <footer id="bottomDock" class="hidden absolute bottom-3 left-3 right-3 z-30 flex flex-col items-center gap-2 pointer-events-none">
+
+    <!-- KHU VỰC THANH KỸ NĂNG TIẾN HÓA (EVOLUTION SKILL HOTBAR) -->
+    <div class="pointer-events-auto flex items-center gap-2 bg-slate-950/90 backdrop-blur-xl px-4 py-2 rounded-2xl border-2 border-amber-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.8)] overflow-x-auto max-w-full">
+      <div class="text-[10px] font-black text-amber-400 uppercase tracking-widest px-1 hidden md:block">
+        KỸ NĂNG<br>TIẾN HÓA
+      </div>
+      <div id="evolutionSkillBar" class="flex items-center gap-2">
+        <!-- Render 6 skill slots kiểu RPG -->
+      </div>
+    </div>
+
+    <!-- DÒNG HÀNH ĐỘNG CƠ BẢN & KHUNG CHAT BONG BÓNG -->
+    <div class="w-full flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl">
+      <!-- Nút Hành Động Cơ Bản -->
+      <div id="actionButtonGroup" class="pointer-events-auto flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700 shadow-xl">
+        <!-- Render động nút cơ bản -->
+      </div>
+
+      <!-- Khung Nhập Chat Nhanh -->
+      <div class="pointer-events-auto flex items-center bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-2xl border border-slate-700 shadow-xl w-full sm:w-80">
+        <input id="inputChat" type="text" maxlength="70" placeholder="Gõ chat bong bóng (Enter)..." class="w-full bg-transparent px-1 text-xs text-white placeholder-slate-400 focus:outline-none">
+        <button id="btnSendChat" class="px-3 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 text-slate-950 font-black rounded-xl text-xs active:scale-95 transition shadow-md">
+          Gửi
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- BANNER SỰ KIỆN: ĐÀI PHÁN XÉT CÔNG CỘNG -->
+  <div id="trialBanner" class="hidden absolute top-20 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-lg bg-gradient-to-b from-amber-950/95 via-slate-900/95 to-slate-950/95 border-2 border-amber-500 rounded-3xl p-4 shadow-2xl backdrop-blur-xl">
+    <div class="flex items-center justify-between pb-2 border-b border-amber-500/30">
+      <div class="flex items-center space-x-2 text-amber-300 font-extrabold text-sm tracking-wide">
+        <span class="text-xl animate-bounce">📜</span>
+        <span>ĐÀI PHÁN XÉT CÔNG CỘNG</span>
+      </div>
+      <div class="text-xs font-mono font-bold text-rose-400 bg-rose-950/60 px-2.5 py-0.5 rounded-full border border-rose-500/40">
+        Còn lại: <span id="trialTimerText">20</span>s
+      </div>
+    </div>
+
+    <div class="my-3 p-3 bg-amber-100/10 rounded-2xl border border-amber-300/20 text-center">
+      <div class="text-[11px] text-amber-200/70 font-semibold mb-1">
+        Tội nhân sám hối: <span id="trialAuthorName" class="text-amber-300 font-bold text-xs">...</span>
+      </div>
+      <p id="trialContentText" class="text-sm font-medium text-slate-100 italic leading-relaxed">
+        "..."
+      </p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 pt-1">
+      <button id="btnVoteForgive" class="flex items-center justify-center space-x-2 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 active:scale-95 rounded-xl font-bold text-xs text-white border border-emerald-400 shadow-md transition">
+        <span>🕊️ Tha Thứ</span>
+        <span id="voteForgiveBadge" class="bg-black/40 text-[10px] px-2 py-0.5 rounded-full">0</span>
+      </button>
+
+      <button id="btnVotePunish" class="flex items-center justify-center space-x-2 py-2.5 px-3 bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 active:scale-95 rounded-xl font-bold text-xs text-white border border-rose-400 shadow-md transition">
+        <span>🔥 Phạt Tiếp</span>
+        <span id="votePunishBadge" class="bg-black/40 text-[10px] px-2 py-0.5 rounded-full">0</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL GƯƠNG CHIẾU NGHIỆP (HỒ SƠ NHÂN VẬT HUYỀN HUYỄN) -->
+  <div id="modalMirrorProfile" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-amber-400/60 rounded-3xl w-full max-w-sm p-5 shadow-2xl relative">
+      <button id="btnCloseMirrorProfile" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+
+      <div class="text-center mb-4">
+        <div class="text-3xl mb-1">🪞</div>
+        <h3 class="text-sm font-black text-amber-300 uppercase tracking-widest">GƯƠNG CHIẾU NGHIỆP</h3>
+        <p class="text-[11px] text-slate-400">Soi tỏ căn duyên và lịch sử tu tập trong tam giới</p>
+      </div>
+
+      <div class="bg-slate-900/90 rounded-2xl p-3.5 border border-slate-700 text-center mb-4">
+        <div id="mirrorAvatar" class="text-4xl mb-1">🙂</div>
+        <div id="mirrorName" class="text-sm font-extrabold text-slate-100">...</div>
+        <div id="mirrorTier" class="text-xs font-bold text-amber-400 mt-0.5">[Người Thường]</div>
+        <div class="mt-2 inline-block px-3 py-1 rounded-full bg-slate-950 border border-slate-700 font-mono text-xs font-black" id="mirrorKarma">
+          0 Karma
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 bg-slate-950/80 p-3 rounded-2xl border border-slate-800 text-xs">
+        <div class="flex items-center justify-between p-1.5 bg-slate-900/60 rounded-xl">
+          <span class="text-slate-400">🕊️ Thăng thiên:</span>
+          <span id="mirrorAscended" class="font-bold text-amber-300 font-mono">0</span>
+        </div>
+        <div class="flex items-center justify-between p-1.5 bg-slate-900/60 rounded-xl">
+          <span class="text-slate-400">🔥 Rớt đài:</span>
+          <span id="mirrorDescended" class="font-bold text-rose-400 font-mono">0</span>
+        </div>
+        <div class="flex items-center justify-between p-1.5 bg-slate-900/60 rounded-xl">
+          <span class="text-slate-400">⚡ Bị sét giáng:</span>
+          <span id="mirrorSmited" class="font-bold text-yellow-300 font-mono">0</span>
+        </div>
+        <div class="flex items-center justify-between p-1.5 bg-slate-900/60 rounded-xl">
+          <span class="text-slate-400">🦀 Bị kéo giò:</span>
+          <span id="mirrorPulled" class="font-bold text-sky-300 font-mono">0</span>
+        </div>
+        <div class="col-span-2 flex items-center justify-between p-1.5 bg-gradient-to-r from-amber-950/40 via-slate-900/60 to-rose-950/40 rounded-xl border border-amber-500/30">
+          <span class="text-amber-300 font-extrabold flex items-center space-x-1">
+            <span>👥</span>
+            <span>Chiêu mộ về phe:</span>
+          </span>
+          <span id="mirrorRecruited" class="font-black text-amber-300 font-mono">0 người</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POPUP BẢNG PHONG THẦN -->
+  <div id="modalLeaderboard" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-3xl w-full max-w-md p-5 shadow-2xl relative">
+      <button id="btnCloseLeaderboard" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+      <h3 class="text-base font-extrabold text-amber-300 flex items-center space-x-2 mb-4">
+        <span>🏆</span>
+        <span>BẢNG PHONG THẦN THẾ GIỚI</span>
+      </h3>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-amber-500/20">
+          <div class="text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center space-x-1">
+            <span>😇</span>
+            <span>Thánh Sống</span>
+          </div>
+          <div id="listSaints" class="space-y-1.5 text-xs text-slate-300"></div>
+        </div>
+
+        <div class="bg-slate-950/60 p-3 rounded-2xl border border-rose-500/20">
+          <div class="text-[11px] font-bold text-rose-400 uppercase tracking-wider mb-2 flex items-center space-x-1">
+            <span>😈</span>
+            <span>Chúa Tể Địa Ngục</span>
+          </div>
+          <div id="listSinners" class="space-y-1.5 text-xs text-slate-300"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL SỔ TAY TIẾN HÓA 14 BẬC HÌNH THÁI -->
+  <div id="modalEvolutionBook" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-amber-500/60 rounded-3xl w-full max-w-3xl max-h-[85vh] p-5 shadow-2xl relative flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-amber-500/30">
+        <h3 class="text-base font-extrabold text-amber-300 flex items-center space-x-2">
+          <span>📖</span>
+          <span>SỔ TAY TIẾN HÓA 14 CẤP HÌNH THÁI & KỸ NĂNG TROLL</span>
+        </h3>
+        <button id="btnCloseEvolutionBook" class="text-slate-400 hover:text-white text-lg">✕</button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto pr-2 mt-4 space-y-4 text-xs">
+        <div>
+          <div class="text-sm font-black text-amber-300 flex items-center space-x-2 mb-2">
+            <span>🕊️</span>
+            <span>7 BẬC CÕI THIÊN ĐÀNG (Karma 0 .. +3000)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="bookHeavenTiers"></div>
+        </div>
+
+        <div class="pt-2">
+          <div class="text-sm font-black text-rose-400 flex items-center space-x-2 mb-2">
+            <span>🔥</span>
+            <span>7 BẬC CÕI ĐỊA NGỤC (Karma -1 .. -3000)</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2" id="bookHellTiers"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ONBOARDING: ĐÀI PHÁN XÉT ĐẦU TIÊN -->
+  <div id="modalOnboarding" class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div class="bg-gradient-to-b from-slate-900 via-slate-950 to-black border-2 border-amber-500/50 rounded-3xl w-full max-w-lg p-6 shadow-2xl relative">
+
+      <div class="text-center mb-5">
+        <div class="text-4xl mb-2 animate-bounce">⚖️</div>
+        <h2 class="text-xl sm:text-2xl font-black text-amber-300 tracking-tight">ĐÀI PHÁN XÉT ĐẦU TIÊN</h2>
+        <p class="text-xs text-slate-300 mt-1">
+          Khai báo danh tính và trả lời 3 câu hỏi nghiệp báo để định đoạt cõi của bạn!
+        </p>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Tên nhân vật của bạn:</label>
+        <div class="flex space-x-2">
+          <input id="inputPlayerName" type="text" maxlength="20" placeholder="Nhập biệt danh..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-sm text-white focus:outline-none focus:border-amber-400">
+          <button id="btnRandomName" type="button" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-xl text-xs text-amber-300 font-medium active:scale-95 transition">
+            🎲 Đổi tên lầy lội
+          </button>
+        </div>
+      </div>
+
+      <div class="space-y-3 max-h-[46vh] overflow-y-auto pr-1 text-xs">
+        <div class="p-3 bg-slate-900/90 rounded-2xl border border-slate-800">
+          <div class="font-bold text-slate-200 mb-2">1. Hứa bao bạn chầu nước rồi tới lúc tính tiền giả vờ đi vệ sinh?</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q1" value="15" checked class="accent-amber-400">
+              <span class="text-slate-300">Chưa bao giờ, luôn hào sảng chia bill sòng phẳng! (+15)</span>
+            </label>
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q1" value="-20" class="accent-rose-500">
+              <span class="text-slate-300">Lâu lâu quên mang ví thôi mà... (-20)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-900/90 rounded-2xl border border-slate-800">
+          <div class="font-bold text-slate-200 mb-2">2. Mượn bút, bật lửa hoặc dây sạc đồng nghiệp xong giữ luôn làm của riêng?</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q2" value="10" checked class="accent-amber-400">
+              <span class="text-slate-300">Dùng xong trả ngay nguyên vẹn! (+10)</span>
+            </label>
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q2" value="-25" class="accent-rose-500">
+              <span class="text-slate-300">Bút ai để bàn nấy dùng, sao đòi gắt thế? (-25)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-900/90 rounded-2xl border border-slate-800">
+          <div class="font-bold text-slate-200 mb-2">3. Bạn thân đăng ảnh dìm hàng hoặc thất tình, bạn phản ứng sao?</div>
+          <div class="space-y-1.5">
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q3" value="10" checked class="accent-amber-400">
+              <span class="text-slate-300">An ủi động viên chân thành! (+10)</span>
+            </label>
+            <label class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-800 cursor-pointer">
+              <input type="radio" name="q3" value="-15" class="accent-rose-500">
+              <span class="text-slate-300">Thả haha nhiệt tình rồi cap màn hình lưu lại! (-15)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 text-center">
+        <button id="btnSubmitOnboarding" class="w-full py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 active:scale-95 text-slate-950 font-black rounded-2xl text-sm shadow-xl transition">
+          ⚡ NGHE PHÁN QUYẾT!
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL NHẬP HOA ĐĂNG (THIÊN ĐÀNG) -->
+  <div id="modalLantern" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-amber-400/40 rounded-3xl w-full max-w-sm p-5 shadow-2xl">
+      <h4 class="text-sm font-bold text-amber-300 mb-2 flex items-center space-x-1.5">
+        <span>🏮</span>
+        <span id="modalLanternTitle">Thả Hoa Đăng Cầu Phước (+5 Karma)</span>
+      </h4>
+      <input id="inputLanternText" type="text" maxlength="80" placeholder="Viết lời chúc ý nghĩa (tối thiểu 8 ký tự)..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white mb-3 focus:outline-none focus:border-amber-400">
+      <div class="flex justify-end space-x-2">
+        <button id="btnCancelLantern" class="px-3 py-1.5 rounded-xl bg-slate-800 text-xs text-slate-300">Hủy</button>
+        <button id="btnConfirmLantern" class="px-3 py-1.5 rounded-xl bg-amber-400 text-slate-950 font-bold text-xs">Thả Hoa Đăng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NHẬP SỚ HỐI LỖI (ĐỊA NGỤC) -->
+  <div id="modalConfess" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div class="bg-slate-900 border border-rose-500/40 rounded-3xl w-full max-w-sm p-5 shadow-2xl">
+      <h4 class="text-sm font-bold text-rose-400 mb-2 flex items-center space-x-1.5">
+        <span>📜</span>
+        <span>Viết Sớ Hối Lỗi (+10 Karma)</span>
+      </h4>
+      <textarea id="inputConfessText" rows="3" maxlength="80" placeholder="Khai thật tội lỗi chân thành (tối thiểu 8 ký tự)..." class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white mb-3 focus:outline-none focus:border-rose-400 resize-none"></textarea>
+      <div class="flex justify-end space-x-2">
+        <button id="btnCancelConfess" class="px-3 py-1.5 rounded-xl bg-slate-800 text-xs text-slate-300">Hủy</button>
+        <button id="btnConfirmConfess" class="px-3 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-xs">Dâng Sớ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NHIỆM VỤ ẨN (BÀ LÃO MẠNH BÀ) -->
+  <div id="modalQuest" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+    <div class="bg-gradient-to-b from-purple-950 via-slate-900 to-slate-950 border-2 border-amber-400/70 rounded-3xl w-full max-w-md p-5 shadow-2xl relative">
+      <button id="btnCloseQuest" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">✕</button>
+
+      <div class="flex items-center space-x-3 mb-4 border-b border-purple-500/30 pb-3">
+        <div class="w-12 h-12 rounded-full bg-gradient-to-b from-amber-400 to-yellow-600 border border-yellow-200 flex items-center justify-center text-2xl shadow-lg">
+          👵
+        </div>
+        <div>
+          <h3 class="text-sm font-black text-amber-300 uppercase tracking-wider">QUÁN CANH TAM GIỚI</h3>
+          <p class="text-[11px] text-purple-300 font-medium">Bà Lão Mạnh Bà giao nhiệm vụ giải nghiệp</p>
+        </div>
+      </div>
+
+      <!-- Lời thoại của Mạnh Bà -->
+      <div class="p-3 bg-purple-900/30 rounded-2xl border border-purple-400/30 mb-4 relative">
+        <span class="text-xs text-purple-200 italic leading-relaxed" id="questQuote">
+          "Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng cho ít công đức!"
+        </span>
+      </div>
+
+      <!-- Chi tiết nhiệm vụ -->
+      <div class="bg-slate-950/80 p-3.5 rounded-2xl border border-slate-800 space-y-2 mb-4">
+        <div class="flex items-center justify-between">
+          <span id="questTitle" class="text-xs font-black text-amber-300">...</span>
+          <span id="questRewardBadge" class="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/40">
+            +50 Karma
+          </span>
+        </div>
+        <p id="questDesc" class="text-[11px] text-slate-300">...</p>
+
+        <!-- Progress Bar -->
+        <div class="pt-1">
+          <div class="flex justify-between text-[10px] text-slate-400 font-bold mb-1">
+            <span>Tiến độ thực hiện:</span>
+            <span id="questProgressText" class="font-mono text-amber-300">0 / 0</span>
+          </div>
+          <div class="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-700">
+            <div id="questProgressBar" class="bg-gradient-to-r from-amber-400 to-yellow-300 h-full rounded-full transition-all duration-300" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div>
+        <button id="btnClaimQuest" disabled class="w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed">
+          <span>🎁 Chưa Hoàn Thành</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST THÔNG BÁO NỔI -->
+  <div id="toastContainer" class="fixed top-16 right-4 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- ========================================================= -->
+  <!-- JAVASCRIPT GAMEPLAY ENGINE & INTERACTION LOGIC -->
+  <!-- ========================================================= -->
+  <script>
+    // BẢNG TIẾN HÓA 14 CẤP HÌNH THÁI
+    const EVOLUTION_TIERS = {
+      H1: { id: 'H1', tier: 1, minKarma: 0, maxKarma: 49, realm: 'heaven', title: 'Người Thường Mới Lên', avatar: '🙂', scale: 1.0, perks: ['meditate', 'lantern', 'bless'], skill: null },
+      H2: { id: 'H2', tier: 2, minKarma: 50, maxKarma: 149, realm: 'heaven', title: 'Tiểu Đồng Học Việc', avatar: '🧒', scale: 1.0, perks: ['confetti_dance'], skill: 'confetti_dance', skillName: '✨ Rắc Pháo Giấy', cd: 15, reqKarma: 50 },
+      H3: { id: 'H3', tier: 3, minKarma: 150, maxKarma: 349, realm: 'heaven', title: 'Thiên Thần Tập Sự', avatar: '👼', scale: 1.05, perks: ['holy_banana'], skill: 'holy_banana', skillName: '🍌 Vỏ Chuối Thánh', cd: 25, reqKarma: 150 },
+      H4: { id: 'H4', tier: 4, minKarma: 350, maxKarma: 699, realm: 'heaven', title: 'Thiên Thần Hộ Vệ', avatar: '🧚', scale: 1.1, perks: ['golden_lantern', 'frog_hex', 'holy_purify'], skill: 'holy_purify', skillName: '✨ Thánh Quang Trừng Phạt', cd: 20, reqKarma: 350 },
+      H5: { id: 'H5', tier: 5, minKarma: 700, maxKarma: 1199, realm: 'heaven', title: 'Đại Thiên Sứ 6 Cánh', avatar: '🧝', scale: 1.16, perks: ['karma_mirror'], skill: 'karma_mirror', skillName: '🪞 Khiên Phản Nghiệp', cd: 45, reqKarma: 700 },
+      H6: { id: 'H6', tier: 6, minKarma: 1200, maxKarma: 1999, realm: 'heaven', title: 'Thượng Tiên Cưỡi Mây', avatar: '🧙‍♂️', scale: 1.22, perks: ['polite_seal'], skill: 'polite_seal', skillName: '🤫 Bùa Ngoan Ngoãn', cd: 45, reqKarma: 1200 },
+      H7: { id: 'H7', tier: 7, minKarma: 2000, maxKarma: 3000, realm: 'heaven', title: 'Ngọc Hoàng Đại Đế', avatar: '👑', scale: 1.3, perks: ['grand_amnesty', 'heaven_rain'], skill: 'heaven_rain', skillName: '🌈 Mưa Lộc Trời', cd: 90, reqKarma: 2000 },
+
+      D1: { id: 'D1', tier: 8, minKarma: -49, maxKarma: -1, realm: 'hell', title: 'Vong Hồn Lạc Lối', avatar: '👻', scale: 1.0, perks: ['wooden_fish', 'confess', 'pull_leg', 'self_sin'], skill: null },
+      D2: { id: 'D2', tier: 9, minKarma: -149, maxKarma: -50, realm: 'hell', title: 'Tiểu Quỷ Sừng Nhú', avatar: '😈', scale: 1.0, perks: ['toxic_fart'], skill: 'toxic_fart', skillName: '💨 Bom Khói Độc', cd: 20, reqKarma: -50 },
+      D3: { id: 'D3', tier: 10, minKarma: -349, maxKarma: -150, realm: 'hell', title: 'Quỷ Dạ Xoa', avatar: '👺', scale: 1.06, perks: ['pig_hex'], skill: 'pig_hex', skillName: '🐷 Bùa Hóa Heo', cd: 30, reqKarma: -150 },
+      D4: { id: 'D4', tier: 11, minKarma: -699, maxKarma: -350, realm: 'hell', title: 'Ngưu Đầu Hộ Pháp', avatar: '👹', scale: 1.14, perks: ['double_pull', 'reverse_walk'], skill: 'reverse_walk', skillName: '🙃 Bùa Đi Ngược', cd: 35, reqKarma: -350 },
+      D5: { id: 'D5', tier: 12, minKarma: -1199, maxKarma: -700, realm: 'hell', title: 'Hắc Bạch Vô Thường', avatar: '💀', scale: 1.2, perks: ['soul_chain'], skill: 'soul_chain', skillName: '⛓️ Xích Câu Hồn', cd: 20, reqKarma: -700 },
+      D6: { id: 'D6', tier: 13, minKarma: -1999, maxKarma: -1200, realm: 'hell', title: 'Đại Ác Quỷ Vương', avatar: '🧛‍♂️', scale: 1.26, perks: ['black_hole'], skill: 'black_hole', skillName: '🕳️ Hố Đen Hút Nghiệp', cd: 50, reqKarma: -1200 },
+      D7: { id: 'D7', tier: 14, minKarma: -3000, maxKarma: -2000, realm: 'hell', title: 'Hỗn Thế Ma Tôn', avatar: '👿', scale: 1.34, perks: ['demon_eclipse'], skill: 'demon_eclipse', skillName: '🌑 Nhật Thực Ma Giới', cd: 90, reqKarma: -2000 }
+    };
+
+    function getPlayerTier(karma) {
+      if (karma >= 0) {
+        if (karma >= 2000) return EVOLUTION_TIERS.H7;
+        if (karma >= 1200) return EVOLUTION_TIERS.H6;
+        if (karma >= 700) return EVOLUTION_TIERS.H5;
+        if (karma >= 350) return EVOLUTION_TIERS.H4;
+        if (karma >= 150) return EVOLUTION_TIERS.H3;
+        if (karma >= 50) return EVOLUTION_TIERS.H2;
+        return EVOLUTION_TIERS.H1;
+      } else {
+        if (karma <= -2000) return EVOLUTION_TIERS.D7;
+        if (karma <= -1200) return EVOLUTION_TIERS.D6;
+        if (karma <= -700) return EVOLUTION_TIERS.D5;
+        if (karma <= -350) return EVOLUTION_TIERS.D4;
+        if (karma <= -150) return EVOLUTION_TIERS.D3;
+        if (karma <= -50) return EVOLUTION_TIERS.D2;
+        return EVOLUTION_TIERS.D1;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 1. SOUND ENGINE (WEB AUDIO API PROCEDURAL SYNTHESIS)
+    // -------------------------------------------------------------
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+        this.ambientOsc1 = null;
+        this.ambientTimer = null;
+        this.currentRealm = 'heaven';
+      }
+
+      init() {
+        if (this.ctx) return;
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        this.ctx = new AudioCtx();
+      }
+
+      resume() {
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+      }
+
+      toggle() {
+        this.enabled = !this.enabled;
+        if (!this.enabled) this.stopAmbient();
+        else this.startAmbient(this.currentRealm);
+        return this.enabled;
+      }
+
+      startAmbient(realm) {
+        this.currentRealm = realm;
+        if (!this.enabled || !this.ctx) return;
+        this.stopAmbient();
+
+        if (realm === 'heaven') {
+          const pentatonic = [523.25, 587.33, 659.25, 783.99, 880.00, 1046.50];
+          const playHarpNote = () => {
+            if (!this.enabled || this.currentRealm !== 'heaven') return;
+            const freq = pentatonic[Math.floor(Math.random() * pentatonic.length)];
+            const now = this.ctx.currentTime;
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
+            osc.frequency.setValueAtTime(freq, now);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.linearRampToValueAtTime(0.04, now + 0.08);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 2.5);
+
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(now);
+            osc.stop(now + 2.6);
+
+            this.ambientTimer = setTimeout(playHarpNote, Math.random() * 1200 + 1600);
+          };
+          playHarpNote();
+        } else {
+          const now = this.ctx.currentTime;
+          const osc = this.ctx.createOscillator();
+          const filter = this.ctx.createBiquadFilter();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(65.41, now);
+          filter.type = 'lowpass';
+          filter.frequency.setValueAtTime(140, now);
+
+          gain.gain.setValueAtTime(0.025, now);
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          this.ambientOsc1 = osc;
+
+          const playHellBeat = () => {
+            if (!this.enabled || this.currentRealm !== 'hell') return;
+            const bNow = this.ctx.currentTime;
+            const bOsc = this.ctx.createOscillator();
+            const bGain = this.ctx.createGain();
+
+            bOsc.type = 'sine';
+            bOsc.frequency.setValueAtTime(82, bNow);
+            bOsc.frequency.exponentialRampToValueAtTime(45, bNow + 0.25);
+
+            bGain.gain.setValueAtTime(0.06, bNow);
+            bGain.gain.exponentialRampToValueAtTime(0.001, bNow + 0.3);
+
+            bOsc.connect(bGain);
+            bGain.connect(this.ctx.destination);
+            bOsc.start(bNow);
+            bOsc.stop(bNow + 0.35);
+
+            this.ambientTimer = setTimeout(playHellBeat, 2400);
+          };
+          playHellBeat();
+        }
+      }
+
+      stopAmbient() {
+        if (this.ambientTimer) { clearTimeout(this.ambientTimer); this.ambientTimer = null; }
+        if (this.ambientOsc1) {
+          try { this.ambientOsc1.stop(); } catch(e) {}
+          this.ambientOsc1 = null;
+        }
+      }
+
+      playEvolutionUp() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [392, 523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 1.25);
+        });
+      }
+
+      playBoingSlip() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.linearRampToValueAtTime(560, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(90, now + 0.38);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.42);
+      }
+
+      playPolymorph() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.28);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      }
+
+      playFartCloud() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(110, now);
+        osc.frequency.linearRampToValueAtTime(65, now + 0.35);
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(250, now);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+
+      playMirrorReflect() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.linearRampToValueAtTime(2400, now + 0.15);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      }
+
+      playHolyPurify() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.07;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.9);
+        });
+      }
+
+      playUltimateHorn() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [130.81, 196.00, 261.63].forEach((freq) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 1.85);
+        });
+      }
+
+      playWoodenFishCombo(combo = 1) {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        let baseFreq = 850;
+        let endFreq = 420;
+        if (combo >= 10) { baseFreq = 1100; endFreq = 620; }
+        else if (combo >= 5) { baseFreq = 950; endFreq = 500; }
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(baseFreq, now);
+        osc.frequency.exponentialRampToValueAtTime(endFreq, now + 0.08);
+
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(baseFreq * 0.8, now);
+        filter.Q.setValueAtTime(combo >= 10 ? 6 : 4, now);
+
+        gain.gain.setValueAtTime(combo >= 10 ? 0.45 : 0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + (combo >= 10 ? 0.13 : 0.09));
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+
+      playSplashBoil() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        for (let i = 0; i < 4; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + i * 0.06;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(140 + Math.random() * 160, t);
+          osc.frequency.exponentialRampToValueAtTime(320, t + 0.08);
+          gain.gain.setValueAtTime(0.12, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.08);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.09);
+        }
+      }
+
+      playDrinkSoup(type = 'clearmind') {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        if (type === 'clearmind') {
+          [784, 988, 1175].forEach((freq, idx) => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const t = now + idx * 0.09;
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, t);
+            gain.gain.setValueAtTime(0.16, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+            osc.connect(gain);
+            gain.connect(this.ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.85);
+          });
+        } else {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(140, now + 0.4);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.45);
+        }
+      }
+
+      playChainWhip() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [2200, 3400, 4800].forEach((freq) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.4, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.26);
+        });
+      }
+
+      playHeartLike() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1318.5, now);
+        osc.frequency.exponentialRampToValueAtTime(1760.0, now + 0.12);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.48);
+      }
+
+      playHarpBell() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [659.25, 830.61, 987.77].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.15, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.85);
+        });
+      }
+
+      playThunder() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const bufferSize = this.ctx.sampleRate * 0.7;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, now);
+        filter.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start(now);
+      }
+
+      playAscend() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        [261.63, 329.63, 392.00, 523.25, 659.25].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.12;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.95);
+        });
+      }
+
+      playPullLeg() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(500, now);
+        osc.frequency.exponentialRampToValueAtTime(110, now + 0.35);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.38);
+      }
+
+      playPop() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(950, now + 0.06);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+
+      playQuestComplete() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.5, 1318.51];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.22, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 0.9);
+        });
+      }
+
+      playControlCapture() {
+        if (!this.enabled || !this.ctx) return;
+        const now = this.ctx.currentTime;
+        const notes = [220, 277.18, 329.63, 440];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const t = now + idx * 0.12;
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.18, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(t);
+          osc.stop(t + 1.25);
+        });
+      }
+    }
+
+    const sound = new SoundEngine();
+
+    // -------------------------------------------------------------
+    // 2. CANVAS HIỆU ỨNG NỀN ĐA TẦNG (SAO TRỜI & TÀN LỬA)
+    // -------------------------------------------------------------
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.isHeaven = Math.random() < 0.52;
+        this.x = Math.random() * canvas.width;
+        if (this.isHeaven) {
+          this.y = Math.random() * (canvas.height * 0.44);
+          this.vx = (Math.random() - 0.5) * 0.35;
+          this.vy = -(Math.random() * 0.35 + 0.1);
+          this.radius = Math.random() * 2 + 1;
+          this.alpha = Math.random() * 0.65 + 0.25;
+          this.color = Math.random() > 0.4 ? `rgba(253, 224, 71, ${this.alpha})` : `rgba(244, 114, 182, ${this.alpha})`;
+        } else {
+          this.y = canvas.height * 0.56 + Math.random() * (canvas.height * 0.44);
+          this.vx = (Math.random() - 0.5) * 0.65;
+          this.vy = -(Math.random() * 0.75 + 0.35);
+          this.radius = Math.random() * 2.5 + 1.2;
+          this.alpha = Math.random() * 0.75 + 0.25;
+          this.color = Math.random() > 0.3 ? `rgba(239, 68, 68, ${this.alpha})` : `rgba(249, 115, 22, ${this.alpha})`;
+        }
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= 0.003;
+        if (this.alpha <= 0 || (this.isHeaven && this.y < 0) || (!this.isHeaven && this.y < canvas.height * 0.54)) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = this.radius * 2.5;
+        ctx.shadowColor = this.isHeaven ? '#fde047' : '#ef4444';
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    for (let i = 0; i < 55; i++) particles.push(new Particle());
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        p.update();
+        p.draw();
+      }
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // -------------------------------------------------------------
+    // 3. LOGIC CLIENT & SOCKET.IO MULTIPLAYER
+    // -------------------------------------------------------------
+    let socket = null;
+    let myId = null;
+    let myPlayer = null;
+    const playersMap = new Map();
+    let selectedTarget = null;
+
+    // Cooldown trackers
+    let lanternCooldownTimer = null;
+    let confessCooldownTimer = null;
+    let remainingLanternCd = 0;
+    let remainingConfessCd = 0;
+    const skillCooldownTimers = {}; // { skillKey: { remaining, total, intervalId } }
+
+    const FUNNY_NAMES = [
+      'Thánh Hứa Lèo', 'Chúa Tể Đi Trễ', 'Bậc Thầy Xem Chùa',
+      'Thiên Thần Trà Sữa', 'Chiến Thần Bom Hàng', 'Đại Ca Quỵt Nợ',
+      'Tiên Đồng Khẩu Nghiệp', 'Thần Kê Bể Nợ', 'Công Chúa Sám Hối'
+    ];
+
+    const inputPlayerName = document.getElementById('inputPlayerName');
+    const btnRandomName = document.getElementById('btnRandomName');
+    const btnSubmitOnboarding = document.getElementById('btnSubmitOnboarding');
+    const modalOnboarding = document.getElementById('modalOnboarding');
+    const userBadge = document.getElementById('userBadge');
+    const badgeRealmIcon = document.getElementById('badgeRealmIcon');
+    const badgeName = document.getElementById('badgeName');
+    const badgeTierTitle = document.getElementById('badgeTierTitle');
+    const badgeKarma = document.getElementById('badgeKarma');
+    const bottomDock = document.getElementById('bottomDock');
+    const actionButtonGroup = document.getElementById('actionButtonGroup');
+    const evolutionSkillBar = document.getElementById('evolutionSkillBar');
+    const playersContainer = document.getElementById('playersContainer');
+    const peachesContainer = document.getElementById('peachesContainer');
+    const trapsContainer = document.getElementById('trapsContainer');
+    const effectsContainer = document.getElementById('effectsContainer');
+    const toastContainer = document.getElementById('toastContainer');
+    const killFeedContainer = document.getElementById('killFeedContainer');
+    const radialMenuContainer = document.getElementById('radialMenuContainer');
+    const eclipseOverlay = document.getElementById('eclipseOverlay');
+    const modalMirrorProfile = document.getElementById('modalMirrorProfile');
+    const btnCloseMirrorProfile = document.getElementById('btnCloseMirrorProfile');
+
+    // Quest & Control Points State
+    let currentQuest = null;
+    let controlPointsData = null;
+
+    const btnQuest = document.getElementById('btnQuest');
+    const badgeQuestReady = document.getElementById('badgeQuestReady');
+    const modalQuest = document.getElementById('modalQuest');
+    const btnCloseQuest = document.getElementById('btnCloseQuest');
+    const btnClaimQuest = document.getElementById('btnClaimQuest');
+    const questQuote = document.getElementById('questQuote');
+    const questTitle = document.getElementById('questTitle');
+    const questDesc = document.getElementById('questDesc');
+    const questRewardBadge = document.getElementById('questRewardBadge');
+    const questProgressText = document.getElementById('questProgressText');
+    const questProgressBar = document.getElementById('questProgressBar');
+    const npcManhBa = document.getElementById('npcManhBa');
+    const npcQuestBubbleText = document.getElementById('npcQuestBubbleText');
+    const hudBuffBadge = document.getElementById('hudBuffBadge');
+    const hudPeachStatus = document.getElementById('hudPeachStatus');
+    const hudPeachBarHeaven = document.getElementById('hudPeachBarHeaven');
+    const hudPeachBarHell = document.getElementById('hudPeachBarHell');
+    const hudCauldronStatus = document.getElementById('hudCauldronStatus');
+    const hudCauldronBarHeaven = document.getElementById('hudCauldronBarHeaven');
+    const hudCauldronBarHell = document.getElementById('hudCauldronBarHell');
+    const zonePeachTree = document.getElementById('zonePeachTree');
+    const zonePeachLabel = document.getElementById('zonePeachLabel');
+    const zoneCauldron = document.getElementById('zoneCauldron');
+    const zoneCauldronLabel = document.getElementById('zoneCauldronLabel');
+
+    inputPlayerName.value = FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)];
+    btnRandomName.addEventListener('click', () => {
+      inputPlayerName.value = FUNNY_NAMES[Math.floor(Math.random() * FUNNY_NAMES.length)];
+    });
+
+    function showToast(msg, isWarning = false) {
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-2.5 rounded-2xl text-xs font-bold shadow-2xl backdrop-blur-xl transition-all duration-300 pointer-events-auto flex items-center space-x-2.5 ${
+        isWarning
+          ? 'bg-rose-950/90 text-rose-200 border-2 border-rose-500/80 shadow-rose-900/50'
+          : 'bg-slate-900/95 text-slate-100 border border-slate-600 shadow-black/80'
+      }`;
+      const icon = document.createElement('span');
+      icon.className = 'text-sm';
+      icon.textContent = isWarning ? '⚠️' : '🔔';
+      const text = document.createElement('span');
+      text.textContent = msg;
+      toast.appendChild(icon);
+      toast.appendChild(text);
+
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-12px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function addKillFeed(text, icon = '📜') {
+      const item = document.createElement('div');
+      item.className = 'px-3 py-1.5 rounded-xl bg-slate-900/85 backdrop-blur-md border border-slate-700/60 text-xs text-slate-200 flex items-center space-x-2 shadow-lg transition-all duration-500';
+      const iconSpan = document.createElement('span');
+      iconSpan.textContent = icon;
+      const textSpan = document.createElement('span');
+      textSpan.textContent = text;
+      item.appendChild(iconSpan);
+      item.appendChild(textSpan);
+
+      killFeedContainer.prepend(item);
+      if (killFeedContainer.children.length > 5) {
+        killFeedContainer.lastElementChild.remove();
+      }
+
+      setTimeout(() => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-24px)';
+        setTimeout(() => item.remove(), 500);
+      }, 9500);
+    }
+
+    document.getElementById('btnInvite').addEventListener('click', () => {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+          showToast('Đã sao chép link game!');
+        });
+      } else {
+        showToast('Link: ' + window.location.href);
+      }
+    });
+
+    const btnAudioToggle = document.getElementById('btnAudioToggle');
+    const iconAudio = document.getElementById('iconAudio');
+    btnAudioToggle.addEventListener('click', () => {
+      sound.init();
+      sound.resume();
+      const isEnabled = sound.toggle();
+      iconAudio.textContent = isEnabled ? '🔊' : '🔇';
+      showToast(isEnabled ? 'Đã bật âm thanh' : 'Đã tắt âm thanh');
+    });
+
+    // Sổ Tay Tiến Hóa
+    const btnEvolutionBook = document.getElementById('btnEvolutionBook');
+    const modalEvolutionBook = document.getElementById('modalEvolutionBook');
+    const btnCloseEvolutionBook = document.getElementById('btnCloseEvolutionBook');
+    const bookHeavenTiers = document.getElementById('bookHeavenTiers');
+    const bookHellTiers = document.getElementById('bookHellTiers');
+
+    function initEvolutionBook() {
+      bookHeavenTiers.innerHTML = '';
+      bookHellTiers.innerHTML = '';
+
+      ['H1','H2','H3','H4','H5','H6','H7'].forEach(key => {
+        const t = EVOLUTION_TIERS[key];
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-2xl bg-slate-900/90 border border-amber-500/25 flex items-start space-x-3 shadow-md';
+        card.innerHTML = `
+          <div class="text-3xl p-1 bg-amber-400/10 rounded-2xl border border-amber-400/30">${t.avatar}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-amber-300 text-xs">${t.title}</span>
+              <span class="font-mono text-[10px] text-amber-400 bg-amber-950/70 px-2 py-0.5 rounded-full border border-amber-500/40">+${t.minKarma}..+${t.maxKarma}</span>
+            </div>
+            <div class="text-[11px] text-slate-300 mt-1">${t.skillName ? `⚡ Kỹ năng: <span class="font-black text-yellow-200">${t.skillName}</span> (CD ${t.cd}s)` : '🌱 Bậc sơ khởi thanh tịnh'}</div>
+          </div>
+        `;
+        bookHeavenTiers.appendChild(card);
+      });
+
+      ['D1','D2','D3','D4','D5','D6','D7'].forEach(key => {
+        const t = EVOLUTION_TIERS[key];
+        const card = document.createElement('div');
+        card.className = 'p-3 rounded-2xl bg-slate-900/90 border border-rose-500/25 flex items-start space-x-3 shadow-md';
+        card.innerHTML = `
+          <div class="text-3xl p-1 bg-rose-500/10 rounded-2xl border border-rose-500/30">${t.avatar}</div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <span class="font-extrabold text-rose-300 text-xs">${t.title}</span>
+              <span class="font-mono text-[10px] text-rose-400 bg-rose-950/70 px-2 py-0.5 rounded-full border border-rose-500/40">${t.maxKarma}..${t.minKarma}</span>
+            </div>
+            <div class="text-[11px] text-slate-300 mt-1">${t.skillName ? `🔥 Kỹ năng: <span class="font-black text-red-300">${t.skillName}</span> (CD ${t.cd}s)` : '💀 Vong hồn sám hối'}</div>
+          </div>
+        `;
+        bookHellTiers.appendChild(card);
+      });
+    }
+    initEvolutionBook();
+
+    btnEvolutionBook.addEventListener('click', () => modalEvolutionBook.classList.remove('hidden'));
+    btnCloseEvolutionBook.addEventListener('click', () => modalEvolutionBook.classList.add('hidden'));
+
+    // Bảng Phong Thần
+    const btnLeaderboard = document.getElementById('btnLeaderboard');
+    const modalLeaderboard = document.getElementById('modalLeaderboard');
+    const btnCloseLeaderboard = document.getElementById('btnCloseLeaderboard');
+    const listSaints = document.getElementById('listSaints');
+    const listSinners = document.getElementById('listSinners');
+
+    btnLeaderboard.addEventListener('click', () => {
+      if (socket) socket.emit('world:get_leaderboard');
+      modalLeaderboard.classList.remove('hidden');
+    });
+    btnCloseLeaderboard.addEventListener('click', () => modalLeaderboard.classList.add('hidden'));
+
+    // Gương Chiếu Nghiệp
+    btnCloseMirrorProfile.addEventListener('click', () => modalMirrorProfile.classList.add('hidden'));
+
+    // Bắt đầu game sau Onboarding
+    btnSubmitOnboarding.addEventListener('click', () => {
+      sound.init();
+      sound.resume();
+      const name = inputPlayerName.value.trim() || 'Linh Hồn';
+      const q1Val = parseInt(document.querySelector('input[name="q1"]:checked').value, 10);
+      const q2Val = parseInt(document.querySelector('input[name="q2"]:checked').value, 10);
+      const q3Val = parseInt(document.querySelector('input[name="q3"]:checked').value, 10);
+      const calculatedKarma = q1Val + q2Val + q3Val;
+
+      modalOnboarding.classList.add('hidden');
+      userBadge.classList.remove('hidden');
+      userBadge.classList.add('flex');
+      bottomDock.classList.remove('hidden');
+
+      initSocket(name, calculatedKarma);
+    });
+
+    function initSocket(name, initialKarma) {
+      socket = io();
+
+      socket.on('connect', () => {
+        socket.emit('player:join', { name, initialKarma });
+      });
+
+      socket.on('world:init', (data) => {
+        myId = data.selfId;
+        playersContainer.innerHTML = '';
+        data.players.forEach(p => {
+          playersMap.set(p.id, p);
+          renderPlayerElement(p);
+        });
+
+        myPlayer = playersMap.get(myId);
+        updateUserUI();
+        updateStatsUI(data.stats);
+        sound.startAmbient(myPlayer.realm);
+
+        if (data.peaches) renderPeaches(data.peaches);
+        if (data.bananas) data.bananas.forEach(b => spawnBananaElement(b));
+        if (data.redPackets) data.redPackets.forEach(pkt => spawnPacketElement(pkt));
+        if (data.activeTrial) showTrialBanner(data.activeTrial);
+        if (data.quest) updateQuestUI(data.quest);
+        if (data.controlPoints) updateControlPointsUI(data.controlPoints);
+      });
+
+      socket.on('player:joined', (player) => {
+        playersMap.set(player.id, player);
+        renderPlayerElement(player);
+      });
+
+      socket.on('player:moved', (data) => {
+        const p = playersMap.get(data.id);
+        if (p) {
+          const oldX = p.x;
+          p.x = data.x;
+          p.y = data.y;
+          updatePlayerPosition(p, oldX);
+          if (selectedTarget && selectedTarget.id === p.id) {
+            closeRadialMenu();
+          }
+        }
+      });
+
+      socket.on('player:updated', (data) => {
+        const p = playersMap.get(data.id);
+        if (p) {
+          p.karma = data.karma;
+          p.realm = data.realm;
+          p.x = data.x;
+          p.y = data.y;
+          if (data.stats) p.stats = data.stats;
+          if (data.tier) p.tier = data.tier;
+          updatePlayerPosition(p, p.x);
+          updatePlayerBadge(p);
+          if (p.id === myId) {
+            myPlayer = p;
+            updateUserUI();
+          }
+        }
+      });
+
+      socket.on('player:evolved', (data) => {
+        const p = playersMap.get(data.id);
+        if (p) {
+          p.tier = data.newTier;
+          p.karma = data.karma;
+          rebuildPlayerElement(p);
+        }
+        if (data.id === myId) {
+          myPlayer = p;
+          updateUserUI();
+          sound.playEvolutionUp();
+          showToast(`✨ CHÚC MỪNG! Bạn đã tiến hóa thành [${data.newTier.title}]!`);
+        }
+      });
+
+      socket.on('player:polymorphed', (data) => {
+        const p = playersMap.get(data.id);
+        if (p) {
+          p.polymorph = { type: data.type, until: data.until };
+          rebuildPlayerElement(p);
+          sound.playPolymorph();
+        }
+      });
+
+      socket.on('world:realm_change', (data) => {
+        const p = playersMap.get(data.id);
+        if (p) {
+          p.realm = data.newRealm;
+          p.karma = data.karma;
+          p.x = data.x;
+          p.y = data.y;
+          if (data.tier) p.tier = data.tier;
+          rebuildPlayerElement(p);
+        }
+
+        if (data.id === myId) {
+          myPlayer = p;
+          updateUserUI();
+          sound.startAmbient(data.newRealm);
+
+          if (data.newRealm === 'heaven') {
+            sound.playAscend();
+            showToast('🎉 CHÚC MỪNG! Bạn đã tích đủ công đức thăng thiên qua Cầu Nại Hà!');
+          } else {
+            sound.playThunder();
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 450);
+            showToast('⚡ THIÊN LÔI GIÁNG THẾ! Bạn đã bị rớt xuống Địa Ngục vì hết nghiệp tốt!', true);
+          }
+        }
+      });
+
+      socket.on('world:effect', (effect) => {
+        handleWorldEffect(effect);
+      });
+
+      socket.on('world:killfeed', (item) => {
+        addKillFeed(item.text, item.icon);
+      });
+
+      socket.on('player:chatted', (data) => {
+        showChatBubble(data.id, data.message, data.isPenalty);
+        sound.playPop();
+      });
+
+      socket.on('world:stats', (stats) => {
+        updateStatsUI(stats);
+      });
+
+      socket.on('world:leaderboard', (data) => {
+        renderLeaderboard(data);
+      });
+
+      socket.on('trial:start', (trial) => {
+        showTrialBanner(trial);
+        sound.playThunder();
+      });
+
+      socket.on('trial:update', (data) => {
+        document.getElementById('voteForgiveBadge').textContent = data.forgiveCount;
+        document.getElementById('votePunishBadge').textContent = data.punishCount;
+      });
+
+      socket.on('trial:end', (data) => {
+        hideTrialBanner(data);
+      });
+
+      socket.on('system:toast', (data) => {
+        showToast(data.message, true);
+      });
+
+      socket.on('player:left', (data) => {
+        playersMap.delete(data.id);
+        const el = document.getElementById(`player_${data.id}`);
+        if (el) el.remove();
+        if (selectedTarget && selectedTarget.id === data.id) closeRadialMenu();
+      });
+
+      socket.on('banana:spawned', (data) => spawnBananaElement(data));
+      socket.on('banana:triggered', (data) => {
+        removeBananaElement(data.bananaId);
+        sound.playBoingSlip();
+      });
+
+      socket.on('fart:spawned', (data) => {
+        spawnFartElement(data);
+        sound.playFartCloud();
+      });
+
+      socket.on('blackhole:spawned', (data) => {
+        spawnBlackHoleElement(data);
+        sound.playUltimateHorn();
+      });
+
+      socket.on('demon:eclipse', (data) => {
+        eclipseOverlay.classList.remove('hidden');
+        eclipseOverlay.classList.add('eclipse-overlay');
+        sound.playUltimateHorn();
+        setTimeout(() => {
+          eclipseOverlay.classList.remove('eclipse-overlay');
+          eclipseOverlay.classList.add('hidden');
+        }, 8000);
+      });
+
+      socket.on('world:recruited', (data) => {
+        if (data.recruiterId === myId) {
+          sound.playEvolutionUp();
+          showToast(`👥 CHIẾN CÔNG! Bạn đã kéo thành công [${data.victimName}] về phe ${data.newRealm === 'heaven' ? 'Thiên Đàng' : 'Địa Ngục'}! Nhận đại thưởng ${data.newRealm === 'heaven' ? '+20 Công Đức' : '-20 Ma Lực'}!`);
+        } else if (data.victimId === myId) {
+          if (data.newRealm === 'heaven') {
+            sound.playAscend();
+            showToast(`✨ BẠN ĐÃ ĐƯỢC CẢM HÓA! [${data.recruiterName}] đã cứu rỗi đưa bạn thăng thiên lên Thiên Đàng!`);
+          } else {
+            sound.playThunder();
+            showToast(`⚡ BẠN ĐÃ BỊ KÉO RỚT CÕI! [${data.recruiterName}] đã lôi bạn sa ngã xuống Địa Ngục!`, true);
+          }
+        }
+      });
+
+      socket.on('heaven:rain_start', (data) => {
+        sound.playUltimateHorn();
+        (data.packets || []).forEach(pkt => spawnPacketElement(pkt));
+      });
+      socket.on('packet_picked', (data) => {
+        removePacketElement(data.packetId);
+        sound.playHeartLike();
+      });
+
+      socket.on('landmark:peaches_spawned', (data) => {
+        renderPeaches(data.peaches || []);
+      });
+      socket.on('landmark:peach_picked', (data) => {
+        removePeachElement(data.peachId);
+        sound.playHarpBell();
+      });
+
+      socket.on('landmark:boil_start', (data) => {
+        showCauldronCountdown(data.playerId, data.finishAt);
+        sound.playSplashBoil();
+      });
+      socket.on('landmark:boil_cancel', (data) => removeCauldronCountdown(data.playerId));
+      socket.on('landmark:boil_success', (data) => {
+        removeCauldronCountdown(data.playerId);
+        sound.playHarpBell();
+      });
+
+      socket.on('world:item_liked', (data) => {
+        updateItemLikeCount(data.itemId, data.likes);
+        sound.playHeartLike();
+      });
+
+      socket.on('quest:data', (data) => {
+        updateQuestUI(data.quest);
+      });
+
+      socket.on('quest:updated', (data) => {
+        updateQuestUI(data.quest, data.completedNow);
+      });
+
+      socket.on('quest:claimed', (data) => {
+        sound.playQuestComplete();
+        showToast(`🎁 Đã nhận thưởng +${data.reward} Karma từ Mạnh Bà!`);
+        updateQuestUI(data.quest);
+      });
+
+      socket.on('control_points:update', (data) => {
+        updateControlPointsUI(data);
+      });
+
+      socket.on('control_point:captured', (data) => {
+        sound.playControlCapture();
+      });
+    }
+
+    // -------------------------------------------------------------
+    // NHIỆM VỤ ẨN BÀ LÃO MẠNH BÀ & CỨ ĐIỂM TRANH CHẤP
+    // -------------------------------------------------------------
+    function openQuestDialog() {
+      if (socket) socket.emit('quest:get');
+      modalQuest.classList.remove('hidden');
+      updateQuestModalUI();
+    }
+
+    function updateQuestUI(quest, completedNow = false) {
+      if (!quest) return;
+      currentQuest = quest;
+      updateQuestModalUI();
+
+      if (badgeQuestReady) {
+        if (quest.isCompleted && !quest.isClaimed) {
+          badgeQuestReady.classList.remove('hidden');
+          if (npcQuestBubbleText) npcQuestBubbleText.textContent = '🎁 Nhận Thưởng!';
+        } else {
+          badgeQuestReady.classList.add('hidden');
+          if (npcQuestBubbleText) npcQuestBubbleText.textContent = 'Nhiệm Vụ Ẩn [?]';
+        }
+      }
+
+      if (completedNow) {
+        sound.playQuestComplete();
+        showToast(`🎉 HOÀN THÀNH NHIỆM VỤ [${quest.title}]! Hãy đến gặp Mạnh Bà nhận thưởng!`);
+        if (myPlayer) {
+          showFloatingText(myPlayer.x, myPlayer.y - 4, '🎉 XONG NHIỆM VỤ! 🎁', 'text-yellow-300 font-black text-sm');
+        }
+      }
+    }
+
+    function updateQuestModalUI() {
+      if (!currentQuest) {
+        if (questTitle) questTitle.textContent = 'Đang nhận nhiệm vụ...';
+        if (questDesc) questDesc.textContent = 'Mạnh Bà đang lục sổ sinh tử tìm công việc giải nghiệp phù hợp cho bạn...';
+        if (questRewardBadge) questRewardBadge.textContent = '... Karma';
+        if (questProgressText) questProgressText.textContent = '0 / 0';
+        if (questProgressBar) questProgressBar.style.width = '0%';
+        if (btnClaimQuest) {
+          btnClaimQuest.disabled = true;
+          btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
+          btnClaimQuest.innerHTML = '<span>⏳ Đang Tải Nhiệm Vụ...</span>';
+        }
+        return;
+      }
+      const isHell = myPlayer && myPlayer.realm === 'hell';
+      const rewardLabel = isHell ? `+${currentQuest.reward} Ma Lực (-${currentQuest.reward} Karma)` : `+${currentQuest.reward} Công Đức (+${currentQuest.reward} Karma)`;
+
+      if (questQuote) questQuote.textContent = `"${currentQuest.quote || 'Canh mới nấu còn nóng hổi đây! Mau làm vài việc lặt vặt giúp ta rồi ta ban thưởng cho ít công đức!'}"`;
+      if (questTitle) questTitle.textContent = currentQuest.title;
+      if (questDesc) questDesc.textContent = currentQuest.desc;
+      if (questRewardBadge) {
+        questRewardBadge.textContent = rewardLabel;
+        questRewardBadge.className = `text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+          isHell
+            ? 'bg-rose-950/70 text-rose-300 border-rose-500/50'
+            : 'bg-amber-400/20 text-amber-300 border-amber-400/40'
+        }`;
+      }
+      if (questProgressText) questProgressText.textContent = `${currentQuest.current} / ${currentQuest.target}`;
+
+      if (questProgressBar) {
+        const pct = Math.min(100, Math.round((currentQuest.current / currentQuest.target) * 100));
+        questProgressBar.style.width = `${pct}%`;
+        questProgressBar.className = `${
+          isHell ? 'bg-gradient-to-r from-rose-600 to-red-400' : 'bg-gradient-to-r from-amber-400 to-yellow-300'
+        } h-full rounded-full transition-all duration-300`;
+      }
+
+      if (btnClaimQuest) {
+        if (currentQuest.isClaimed) {
+          btnClaimQuest.disabled = true;
+          btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
+          btnClaimQuest.innerHTML = '<span>✅ Đã Nhận Thưởng</span>';
+        } else if (currentQuest.isCompleted) {
+          btnClaimQuest.disabled = false;
+          btnClaimQuest.className = `w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 ${
+            isHell
+              ? 'bg-gradient-to-r from-rose-600 via-red-500 to-rose-700 hover:from-rose-500 text-white shadow-[0_0_20px_#f43f5e]'
+              : 'bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 text-slate-950 shadow-[0_0_20px_#f59e0b]'
+          } cursor-pointer animate-pulse`;
+          btnClaimQuest.innerHTML = `<span>🎁 Nhận Thưởng (${rewardLabel})</span>`;
+        } else {
+          btnClaimQuest.disabled = true;
+          btnClaimQuest.className = 'w-full py-2.5 rounded-xl font-black text-xs transition duration-200 flex items-center justify-center space-x-1 bg-slate-800 text-slate-500 cursor-not-allowed';
+          btnClaimQuest.innerHTML = `<span>⏳ Chưa Hoàn Thành (${currentQuest.current}/${currentQuest.target})</span>`;
+        }
+      }
+    }
+
+    function updateControlPointsUI(data) {
+      if (!data) return;
+      controlPointsData = data;
+      const peach = data.peach_tree;
+      const cauldron = data.boiling_cauldron;
+
+      if (peach && hudPeachBarHeaven && hudPeachBarHell && hudPeachStatus) {
+        const heavenPct = Math.round(((peach.progress + 100) / 200) * 100);
+        hudPeachBarHeaven.style.width = `${heavenPct}%`;
+        hudPeachBarHell.style.width = `${100 - heavenPct}%`;
+
+        let statusText = 'Trung Lập';
+        let statusColor = 'text-slate-400';
+        let borderZone = 'border-slate-500/50';
+        let labelText = '🍑 Trung Lập';
+
+        if (peach.controlledBy === 'heaven') {
+          statusText = '✨ Thiên Đàng';
+          statusColor = 'text-sky-300';
+          borderZone = 'border-sky-400/80 shadow-[0_0_35px_rgba(56,189,248,0.4)]';
+          labelText = '🍑 Thiên Đàng Chiếm Giữ';
+        } else if (peach.controlledBy === 'hell') {
+          statusText = '🔥 Địa Ngục';
+          statusColor = 'text-rose-400';
+          borderZone = 'border-rose-500/80 shadow-[0_0_35px_rgba(244,63,94,0.4)]';
+          labelText = '🍑 Địa Ngục Chiếm Giữ';
+        } else if (peach.progress > 0) {
+          statusText = `Thiên Đàng (+${peach.progress}%)`;
+          statusColor = 'text-sky-400';
+        } else if (peach.progress < 0) {
+          statusText = `Địa Ngục (${peach.progress}%)`;
+          statusColor = 'text-rose-400';
+        }
+
+        hudPeachStatus.textContent = statusText;
+        hudPeachStatus.className = `font-extrabold ${statusColor}`;
+
+        if (zonePeachTree) {
+          zonePeachTree.className = `absolute rounded-full border-2 border-dashed control-zone-pulse flex items-center justify-center pointer-events-none transition-colors duration-500 ${borderZone}`;
+        }
+        if (zonePeachLabel) zonePeachLabel.textContent = labelText;
+      }
+
+      if (cauldron && hudCauldronBarHeaven && hudCauldronBarHell && hudCauldronStatus) {
+        const heavenPct = Math.round(((cauldron.progress + 100) / 200) * 100);
+        hudCauldronBarHeaven.style.width = `${heavenPct}%`;
+        hudCauldronBarHell.style.width = `${100 - heavenPct}%`;
+
+        let statusText = 'Trung Lập';
+        let statusColor = 'text-slate-400';
+        let borderZone = 'border-slate-500/50';
+        let labelText = '🔥 Trung Lập';
+
+        if (cauldron.controlledBy === 'heaven') {
+          statusText = '✨ Thiên Đàng';
+          statusColor = 'text-sky-300';
+          borderZone = 'border-sky-400/80 shadow-[0_0_35px_rgba(56,189,248,0.4)]';
+          labelText = '🔥 Thiên Đàng Chiếm Giữ';
+        } else if (cauldron.controlledBy === 'hell') {
+          statusText = '🔥 Địa Ngục';
+          statusColor = 'text-rose-400';
+          borderZone = 'border-rose-500/80 shadow-[0_0_35px_rgba(244,63,94,0.4)]';
+          labelText = '🔥 Địa Ngục Chiếm Giữ';
+        } else if (cauldron.progress > 0) {
+          statusText = `Thiên Đàng (+${cauldron.progress}%)`;
+          statusColor = 'text-sky-400';
+        } else if (cauldron.progress < 0) {
+          statusText = `Địa Ngục (${cauldron.progress}%)`;
+          statusColor = 'text-rose-400';
+        }
+
+        hudCauldronStatus.textContent = statusText;
+        hudCauldronStatus.className = `font-extrabold ${statusColor}`;
+
+        if (zoneCauldron) {
+          zoneCauldron.className = `absolute rounded-full border-2 border-dashed control-zone-pulse flex items-center justify-center pointer-events-none transition-colors duration-500 ${borderZone}`;
+        }
+        if (zoneCauldronLabel) zoneCauldronLabel.textContent = labelText;
+      }
+
+      if (myPlayer && hudBuffBadge) {
+        const hasBuff = (peach && peach.controlledBy === myPlayer.realm) || (cauldron && cauldron.controlledBy === myPlayer.realm);
+        if (hasBuff) {
+          hudBuffBadge.classList.remove('hidden');
+        } else {
+          hudBuffBadge.classList.add('hidden');
+        }
+      }
+    }
+
+    if (npcManhBa) {
+      npcManhBa.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openQuestDialog();
+      });
+    }
+    if (btnQuest) {
+      btnQuest.addEventListener('click', () => openQuestDialog());
+    }
+    if (btnCloseQuest) {
+      btnCloseQuest.addEventListener('click', () => modalQuest.classList.add('hidden'));
+    }
+    if (btnClaimQuest) {
+      btnClaimQuest.addEventListener('click', () => {
+        if (socket && currentQuest && currentQuest.isCompleted && !currentQuest.isClaimed) {
+          socket.emit('quest:claim');
+        }
+      });
+    }
+
+    // -------------------------------------------------------------
+    // 4. THANH KỸ NĂNG TIẾN HÓA (SKILL DOCK RPG STYLE)
+    // -------------------------------------------------------------
+    function updateUserUI() {
+      if (!myPlayer) return;
+      const tier = myPlayer.tier || getPlayerTier(myPlayer.karma);
+
+      badgeName.textContent = myPlayer.name;
+      badgeKarma.textContent = myPlayer.karma;
+      badgeRealmIcon.textContent = tier.avatar;
+      badgeTierTitle.textContent = tier.title;
+
+      renderRpgSkillBar(tier);
+      renderBasicActions(tier);
+    }
+
+    function renderRpgSkillBar(currentTier) {
+      evolutionSkillBar.innerHTML = '';
+
+      const isHeaven = myPlayer.realm === 'heaven';
+      const skillKeys = isHeaven
+        ? ['H2', 'H3', 'H4', 'H5', 'H6', 'H7']
+        : ['D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+
+      skillKeys.forEach((k, idx) => {
+        const tierData = EVOLUTION_TIERS[k];
+        const isUnlocked = isHeaven
+          ? (myPlayer.karma >= tierData.reqKarma)
+          : (myPlayer.karma <= tierData.reqKarma);
+        const diff = isHeaven
+          ? Math.max(0, tierData.reqKarma - myPlayer.karma)
+          : Math.max(0, myPlayer.karma - tierData.reqKarma);
+
+        const slot = document.createElement('div');
+        slot.className = 'relative flex flex-col items-center group';
+
+        const btn = document.createElement('button');
+        btn.id = `skill_slot_${tierData.skill}`;
+        btn.className = `relative w-12 h-12 md:w-13 md:h-13 rounded-2xl flex items-center justify-center text-xl transition-all duration-200 overflow-hidden shadow-lg ${
+          isUnlocked
+            ? (isHeaven
+                ? 'bg-gradient-to-b from-amber-300 via-amber-400 to-yellow-500 border-2 border-yellow-200 text-slate-950 active:scale-95 hover:brightness-110 shadow-[0_0_15px_rgba(250,204,21,0.7)] animate-pulse ring-2 ring-amber-300'
+                : 'bg-gradient-to-b from-rose-700 via-red-800 to-black border-2 border-red-500 text-white active:scale-95 hover:brightness-110 shadow-[0_0_15px_rgba(239,68,68,0.8)] animate-pulse ring-2 ring-rose-500')
+            : 'bg-slate-900/90 border-2 border-slate-700/60 text-slate-500 opacity-60 cursor-not-allowed'
+        }`;
+
+        // Icon chính của kỹ năng
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'select-none pointer-events-none';
+        iconSpan.textContent = tierData.skillName.split(' ')[0] || '✨';
+        btn.appendChild(iconSpan);
+
+        // Khóa nếu chưa đủ cấp
+        if (!isUnlocked) {
+          const lockBadge = document.createElement('div');
+          lockBadge.className = 'absolute top-1 right-1 text-[11px] text-amber-300 drop-shadow animate-bounce';
+          lockBadge.textContent = '🔒';
+          btn.appendChild(lockBadge);
+
+          const karmaTag = document.createElement('div');
+          karmaTag.className = 'absolute bottom-0 inset-x-0 bg-black/85 text-[7.5px] font-mono font-bold text-center text-slate-300 py-0.5 px-0.5 leading-tight truncate';
+          karmaTag.textContent = `Thiếu ${diff}`;
+          btn.appendChild(karmaTag);
+
+          btn.onclick = () => showToast(`⚠️ Cần đạt bậc [${tierData.title}] (${isHeaven ? '+' : ''}${tierData.reqKarma} Karma) mới dùng được chiêu này! (Còn thiếu ${diff} điểm)`, true);
+        } else {
+          // Hotkey số
+          const numKey = document.createElement('div');
+          numKey.className = 'absolute top-0.5 left-1 text-[9px] font-mono font-extrabold text-black/60 dark:text-white/60';
+          numKey.textContent = idx + 1;
+          btn.appendChild(numKey);
+
+          // Overlay quét Cooldown Sweep
+          const cdOverlay = document.createElement('div');
+          cdOverlay.id = `cd_sweep_${tierData.skill}`;
+          cdOverlay.className = 'hidden cd-sweep';
+          btn.appendChild(cdOverlay);
+
+          // Số giây đếm ngược
+          const cdText = document.createElement('div');
+          cdText.id = `cd_text_${tierData.skill}`;
+          cdText.className = 'hidden absolute inset-0 flex items-center justify-center text-xs font-black font-mono text-white drop-shadow-[0_2px_4px_black]';
+          btn.appendChild(cdText);
+
+          btn.onclick = () => {
+            if (skillCooldownTimers[tierData.skill] && skillCooldownTimers[tierData.skill].remaining > 0) {
+              showToast(`⏳ Kỹ năng đang hồi chiêu: còn ${skillCooldownTimers[tierData.skill].remaining} giây!`, true);
+              return;
+            }
+            castTrollSkill(tierData.skill);
+          };
+        }
+
+        // Tooltip khi hover
+        const tooltip = document.createElement('div');
+        tooltip.className = 'absolute bottom-15 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-bold px-2 py-1 rounded-xl shadow-xl border border-slate-700 whitespace-nowrap z-50';
+        tooltip.textContent = isUnlocked
+          ? `⚡ [${idx + 1}] ${tierData.skillName} (CD ${tierData.cd}s) — Sẵn sàng!`
+          : `🔒 ${tierData.skillName} • Cần [${tierData.title}] (${isHeaven ? '+' : ''}${tierData.reqKarma}) • Thiếu ${diff} Karma`;
+        slot.appendChild(tooltip);
+
+        slot.appendChild(btn);
+        evolutionSkillBar.appendChild(slot);
+      });
+    }
+
+    let lastFastChantClient = 0;
+    let lastFastChaosClient = 0;
+
+    function renderBasicActions(tier) {
+      actionButtonGroup.innerHTML = '';
+
+      if (myPlayer.realm === 'heaven') {
+        const isGoldenLantern = (tier.perks || []).includes('golden_lantern');
+        actionButtonGroup.innerHTML = `
+          <button id="btnFastChant" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500 hover:from-emerald-300 text-slate-950 font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md ring-1 ring-emerald-300">
+            <span>🧘</span>
+            <span id="txtFastChant">Tụng Kinh Gấp Đôi (+1)</span>
+          </button>
+          <button id="btnMeditate" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 text-slate-950 font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>🪷</span>
+            <span>Tọa Thiền (+3)</span>
+          </button>
+          <button id="btnOpenLantern" class="px-3.5 py-2 rounded-xl ${isGoldenLantern ? 'bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 ring-2 ring-yellow-200 text-slate-950 font-black' : 'bg-gradient-to-r from-sky-500 to-teal-400 text-slate-950 font-black'} text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>🏮</span>
+            <span id="txtLanternBtn">${isGoldenLantern ? 'Hoa Đăng Hoàng Kim (+8)' : 'Thả Hoa Đăng (+5)'}</span>
+          </button>
+          <button id="btnSmite" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 text-white font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>⚡</span>
+            <span>Ném Sét (-15)</span>
+          </button>
+        `;
+
+        document.getElementById('btnFastChant').addEventListener('click', () => {
+          const now = Date.now();
+          if (now - lastFastChantClient < 1500) {
+            const left = ((1500 - (now - lastFastChantClient)) / 1000).toFixed(1);
+            showToast(`Đang tĩnh tâm! Chờ ${left}s nữa!`, true);
+            return;
+          }
+          lastFastChantClient = now;
+          socket.emit('player:action', { type: 'fast_chant' });
+          const txt = document.getElementById('txtFastChant');
+          if (txt) {
+            txt.textContent = 'Đang tĩnh tâm (1.5s)...';
+            setTimeout(() => { if (txt) txt.textContent = 'Tụng Kinh Gấp Đôi (+1)'; }, 1500);
+          }
+        });
+        document.getElementById('btnMeditate').addEventListener('click', () => {
+          socket.emit('player:action', { type: 'meditate' });
+        });
+        document.getElementById('btnOpenLantern').addEventListener('click', () => {
+          if (remainingLanternCd > 0) {
+            showToast(`Vui lòng chờ ${remainingLanternCd}s nữa mới được thả hoa đăng tiếp!`, true);
+            return;
+          }
+          document.getElementById('modalLantern').classList.remove('hidden');
+        });
+        document.getElementById('btnSmite').addEventListener('click', () => {
+          socket.emit('player:action', { type: 'smite', targetId: selectedTarget ? selectedTarget.id : null });
+        });
+
+      } else {
+        actionButtonGroup.innerHTML = `
+          <button id="btnFastChaos" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-red-600 via-orange-600 to-rose-700 hover:from-red-500 text-white font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md ring-1 ring-orange-400">
+            <span>🔥</span>
+            <span id="txtFastChaos">Phá Phách Địa Ngục (-3)</span>
+          </button>
+          <button id="btnWoodenFish" class="relative px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 text-amber-100 font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>🪵</span>
+            <span id="txtFishCombo">Gõ Mõ Sám Hối (+4)</span>
+          </button>
+          <button id="btnOpenConfess" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-700 to-red-600 hover:from-rose-600 text-white font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>📜</span>
+            <span id="txtConfessBtn">Viết Sớ Hối Lỗi (+10)</span>
+          </button>
+          <button id="btnSelfSin" class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-800 to-rose-900 hover:from-purple-700 text-rose-200 font-black text-xs flex items-center space-x-1.5 active:scale-95 transition shadow-md">
+            <span>😈</span>
+            <span>Tự Tạo Nghiệp (-25)</span>
+          </button>
+        `;
+
+        document.getElementById('btnFastChaos').addEventListener('click', () => {
+          const now = Date.now();
+          if (now - lastFastChaosClient < 1500) {
+            const left = ((1500 - (now - lastFastChaosClient)) / 1000).toFixed(1);
+            showToast(`Phá phách cũng cần lấy hơi! Chờ ${left}s nữa!`, true);
+            return;
+          }
+          lastFastChaosClient = now;
+          socket.emit('player:action', { type: 'fast_chaos' });
+          const txt = document.getElementById('txtFastChaos');
+          if (txt) {
+            txt.textContent = 'Lấy hơi (1.5s)...';
+            setTimeout(() => { if (txt) txt.textContent = 'Phá Phách Địa Ngục (-1)'; }, 1500);
+          }
+        });
+        document.getElementById('btnWoodenFish').addEventListener('click', () => {
+          socket.emit('player:action', { type: 'wooden_fish' });
+        });
+        document.getElementById('btnOpenConfess').addEventListener('click', () => {
+          if (remainingConfessCd > 0) {
+            showToast(`Vui lòng chờ ${remainingConfessCd}s nữa mới được dâng sớ tiếp!`, true);
+            return;
+          }
+          document.getElementById('modalConfess').classList.remove('hidden');
+        });
+        document.getElementById('btnSelfSin').addEventListener('click', () => {
+          socket.emit('player:action', { type: 'self_sin' });
+        });
+      }
+    }
+
+    // Kích hoạt kỹ năng troll kèm Cooldown Sweep
+    function castTrollSkill(skillKey) {
+      if (!socket || !myPlayer) return;
+
+      if (skillCooldownTimers[skillKey] && skillCooldownTimers[skillKey].remaining > 0) {
+        showToast(`⏳ Kỹ năng đang hồi chiêu: còn ${skillCooldownTimers[skillKey].remaining} giây!`, true);
+        return;
+      }
+
+      const targetRequiredSkills = ['confetti_dance', 'frog_hex', 'polite_seal', 'pig_hex', 'reverse_walk', 'soul_chain', 'holy_purify'];
+      if (targetRequiredSkills.includes(skillKey)) {
+        if (!selectedTarget) {
+          showToast('Hãy click vào 1 người chơi khác trên bản đồ để chọn mục tiêu!', true);
+          return;
+        }
+        if (skillKey === 'soul_chain' && selectedTarget.realm !== 'heaven') {
+          showToast('Xích Câu Hồn chỉ có thể câu hồn người ở cõi Thiên Đàng!', true);
+          return;
+        }
+        socket.emit('player:cast_skill', { skill: skillKey, targetId: selectedTarget.id });
+      } else {
+        socket.emit('player:cast_skill', { skill: skillKey });
+      }
+
+      // Kích hoạt Cooldown Sweep UI
+      const tierObj = Object.values(EVOLUTION_TIERS).find(t => t.skill === skillKey);
+      if (tierObj && tierObj.cd) {
+        startSkillCooldownSweep(skillKey, tierObj.cd);
+      }
+    }
+
+    function startSkillCooldownSweep(skillKey, totalSec) {
+      const sweepEl = document.getElementById(`cd_sweep_${skillKey}`);
+      const textEl = document.getElementById(`cd_text_${skillKey}`);
+      if (!sweepEl || !textEl) return;
+
+      if (skillCooldownTimers[skillKey]) {
+        clearInterval(skillCooldownTimers[skillKey].intervalId);
+      }
+
+      sweepEl.classList.remove('hidden');
+      textEl.classList.remove('hidden');
+
+      let remainingMs = totalSec * 1000;
+      const startTime = Date.now();
+
+      skillCooldownTimers[skillKey] = {
+        remaining: totalSec,
+        total: totalSec,
+        intervalId: null
+      };
+
+      const updateSweep = () => {
+        const elapsed = Date.now() - startTime;
+        const leftSec = Math.max(0, Math.ceil((remainingMs - elapsed) / 1000));
+        if (skillCooldownTimers[skillKey]) {
+          skillCooldownTimers[skillKey].remaining = leftSec;
+        }
+        textEl.textContent = `${leftSec}s`;
+
+        const percent = Math.min(100, (elapsed / (totalSec * 1000)) * 100);
+        // Quét góc conic-gradient từ 0 đến 360
+        sweepEl.style.background = `conic-gradient(rgba(0, 0, 0, 0.78) ${100 - percent}%, transparent 0%)`;
+
+        if (elapsed >= remainingMs) {
+          clearInterval(skillCooldownTimers[skillKey].intervalId);
+          sweepEl.classList.add('hidden');
+          textEl.classList.add('hidden');
+          delete skillCooldownTimers[skillKey];
+        }
+      };
+
+      const intervalId = setInterval(updateSweep, 100);
+      skillCooldownTimers[skillKey].intervalId = intervalId;
+    }
+
+    function updateStatsUI(stats) {
+      if (!stats) return;
+      const total = Math.max(1, stats.total);
+      const hPercent = Math.round((stats.heavenCount / total) * 100);
+      const hellPercent = 100 - hPercent;
+
+      const barHeaven = document.getElementById('barHeaven');
+      const barHell = document.getElementById('barHell');
+      barHeaven.style.width = `${Math.max(15, Math.min(85, hPercent))}%`;
+      barHell.style.width = `${Math.max(15, Math.min(85, hellPercent))}%`;
+
+      document.getElementById('txtHeavenCount').textContent = stats.heavenCount;
+      document.getElementById('txtHellCount').textContent = stats.hellCount;
+    }
+
+    // Cooldown Hoa Đăng & Sớ Hối Lỗi
+    document.getElementById('btnCancelLantern').addEventListener('click', () => {
+      document.getElementById('modalLantern').classList.add('hidden');
+    });
+    document.getElementById('btnConfirmLantern').addEventListener('click', () => {
+      const text = document.getElementById('inputLanternText').value.trim();
+      if (text.length < 8) {
+        showToast('Lời chúc hoa đăng phải có ít nhất 8 ký tự!', true);
+        return;
+      }
+      socket.emit('player:action', { type: 'lantern', text });
+      document.getElementById('inputLanternText').value = '';
+      document.getElementById('modalLantern').classList.add('hidden');
+      startLanternCountdown(20);
+    });
+
+    function startLanternCountdown(sec) {
+      remainingLanternCd = sec;
+      const btn = document.getElementById('txtLanternBtn');
+      if (lanternCooldownTimer) clearInterval(lanternCooldownTimer);
+      lanternCooldownTimer = setInterval(() => {
+        remainingLanternCd--;
+        if (btn) btn.textContent = remainingLanternCd > 0 ? `Chờ ${remainingLanternCd}s...` : 'Thả Hoa Đăng';
+        if (remainingLanternCd <= 0) {
+          clearInterval(lanternCooldownTimer);
+          if (myPlayer) updateUserUI();
+        }
+      }, 1000);
+    }
+
+    document.getElementById('btnCancelConfess').addEventListener('click', () => {
+      document.getElementById('modalConfess').classList.add('hidden');
+    });
+    document.getElementById('btnConfirmConfess').addEventListener('click', () => {
+      const text = document.getElementById('inputConfessText').value.trim();
+      if (text.length < 8) {
+        showToast('Sớ sám hối phải có ít nhất 8 ký tự!', true);
+        return;
+      }
+      socket.emit('player:action', { type: 'confess', text });
+      document.getElementById('inputConfessText').value = '';
+      document.getElementById('modalConfess').classList.add('hidden');
+      startConfessCountdown(20);
+    });
+
+    function startConfessCountdown(sec) {
+      remainingConfessCd = sec;
+      const btn = document.getElementById('txtConfessBtn');
+      if (confessCooldownTimer) clearInterval(confessCooldownTimer);
+      confessCooldownTimer = setInterval(() => {
+        remainingConfessCd--;
+        if (btn) btn.textContent = remainingConfessCd > 0 ? `Chờ ${remainingConfessCd}s...` : 'Viết Sớ Hối Lỗi';
+        if (remainingConfessCd <= 0) {
+          clearInterval(confessCooldownTimer);
+          if (myPlayer) updateUserUI();
+        }
+      }, 1000);
+    }
+
+    // Chat
+    const inputChat = document.getElementById('inputChat');
+    const btnSendChat = document.getElementById('btnSendChat');
+    function sendChat() {
+      const msg = inputChat.value.trim();
+      if (msg && socket) {
+        socket.emit('player:chat', msg);
+        inputChat.value = '';
+      }
+    }
+    btnSendChat.addEventListener('click', sendChat);
+    inputChat.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendChat();
+    });
+
+    // -------------------------------------------------------------
+    // 5. RENDER NHÂN VẬT & HIỆU ỨNG THỊ GIÁC CHIBI JUICY
+    // -------------------------------------------------------------
+    function renderPlayerElement(p) {
+      let el = document.getElementById(`player_${p.id}`);
+      if (el) return;
+
+      const tier = p.tier || getPlayerTier(p.karma);
+
+      el = document.createElement('div');
+      el.id = `player_${p.id}`;
+      el.className = 'absolute pointer-events-auto cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out flex flex-col items-center';
+      el.style.left = `${p.x}%`;
+      el.style.top = `${p.y}%`;
+
+      // Thanh đếm ngược tắm vạc dầu
+      const boilBar = document.createElement('div');
+      boilBar.id = `boil_bar_${p.id}`;
+      boilBar.className = 'hidden mb-1 px-2.5 py-0.5 bg-orange-950/90 border border-orange-400 text-orange-200 text-[10px] font-black rounded-full shadow-lg';
+      el.appendChild(boilBar);
+
+      // Bong bóng chat có đuôi trỏ
+      const bubble = document.createElement('div');
+      bubble.id = `bubble_${p.id}`;
+      bubble.className = 'hidden mb-2 px-3 py-1.5 max-w-[170px] speech-bubble text-[11px] font-semibold rounded-2xl text-center break-words z-30 pointer-events-none';
+      el.appendChild(bubble);
+
+      // Thẻ tên và Cấp bậc
+      const nameBadge = document.createElement('div');
+      nameBadge.className = 'flex items-center space-x-1 px-2 py-0.5 rounded-full bg-slate-900/90 backdrop-blur-md border border-slate-700 text-[10px] whitespace-nowrap mb-1 shadow-md';
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'font-extrabold text-slate-200';
+      nameSpan.textContent = p.name + (p.id === myId ? ' (Bạn)' : '');
+
+      const karmaSpan = document.createElement('span');
+      karmaSpan.id = `karma_${p.id}`;
+      karmaSpan.className = `font-mono font-black ${p.karma >= 0 ? 'text-amber-300' : 'text-rose-400'}`;
+      karmaSpan.textContent = `[${p.karma}]`;
+
+      nameBadge.appendChild(nameSpan);
+      nameBadge.appendChild(karmaSpan);
+      el.appendChild(nameBadge);
+
+      // Khung chứa Avatar & Cánh / Sừng / Rồng
+      const skinWrapper = document.createElement('div');
+      skinWrapper.className = 'relative flex items-center justify-center';
+
+      // Bóng đổ dưới chân
+      const shadow = document.createElement('div');
+      shadow.className = 'player-shadow';
+      skinWrapper.appendChild(shadow);
+
+      // Avatar Box
+      const avatarBox = document.createElement('div');
+      avatarBox.id = `avatar_${p.id}`;
+      avatarBox.className = getAvatarClasses(tier, p);
+
+      // Biến thân Ếch / Heo
+      if (p.polymorph && p.polymorph.until > Date.now()) {
+        avatarBox.textContent = p.polymorph.type === 'frog' ? '🐸' : '🐷';
+      } else {
+        avatarBox.textContent = tier.avatar;
+      }
+
+      // H3: Cánh thiên thần vỗ nhẹ
+      if (tier.id === 'H3') {
+        const wingL = document.createElement('div');
+        wingL.className = 'absolute -left-3.5 text-base wing-l pointer-events-none drop-shadow-[0_0_6px_#fef08a]';
+        wingL.textContent = '🪽';
+        const wingR = document.createElement('div');
+        wingR.className = 'absolute -right-3.5 text-base wing-r pointer-events-none drop-shadow-[0_0_6px_#fef08a]';
+        wingR.textContent = '🪽';
+        skinWrapper.appendChild(wingL);
+        skinWrapper.appendChild(wingR);
+      }
+
+      // H5: Đại Thiên Sứ 6 Cánh
+      if (tier.id === 'H5') {
+        const wingsSvg = document.createElement('div');
+        wingsSvg.className = 'absolute -inset-4 pointer-events-none flex items-center justify-between text-lg drop-shadow-[0_0_8px_#38bdf8]';
+        wingsSvg.innerHTML = '<span class="wing-l">🪽🪽</span><span class="wing-r">🪽🪽</span>';
+        skinWrapper.appendChild(wingsSvg);
+      }
+
+      // H6: Thượng Tiên Cưỡi Mây Ngũ Sắc
+      if (tier.id === 'H6') {
+        const cloud = document.createElement('div');
+        cloud.className = 'absolute -bottom-3 text-3xl rainbow-cloud pointer-events-none';
+        cloud.textContent = '☁️';
+        skinWrapper.appendChild(cloud);
+      }
+
+      // H7: Rồng Vàng bay quanh Ngọc Hoàng Đại Đế
+      if (tier.id === 'H7') {
+        const dragon = document.createElement('div');
+        dragon.className = 'absolute text-2xl dragon-orbit pointer-events-none z-20 drop-shadow-[0_0_10px_#f59e0b]';
+        dragon.textContent = '🐉';
+        skinWrapper.appendChild(dragon);
+      }
+
+      // D6: Cánh Dơi Khổng Lồ
+      if (tier.id === 'D6') {
+        const batWings = document.createElement('div');
+        batWings.className = 'absolute -inset-4 pointer-events-none flex items-center justify-between text-xl drop-shadow-[0_0_8px_#a855f7]';
+        batWings.innerHTML = '<span class="wing-l">🦇</span><span class="wing-r">🦇</span>';
+        skinWrapper.appendChild(batWings);
+      }
+
+      // D7: Hào Quang Hắc Lôi
+      if (tier.id === 'D7') {
+        avatarBox.classList.add('demon-glow');
+      }
+
+      // Khiên Phản Nghiệp
+      if (p.shieldUntil && p.shieldUntil > Date.now()) {
+        const shield = document.createElement('div');
+        shield.className = 'absolute -inset-3 rounded-full border-2 border-sky-400 border-dashed shield-reflect pointer-events-none';
+        skinWrapper.appendChild(shield);
+      }
+
+      skinWrapper.appendChild(avatarBox);
+      el.appendChild(skinWrapper);
+
+      // Sóng âm gõ mõ
+      const waveBox = document.createElement('div');
+      waveBox.id = `wave_${p.id}`;
+      waveBox.className = 'absolute inset-0 rounded-full border-2 border-amber-400/80 pointer-events-none hidden';
+      el.appendChild(waveBox);
+
+      // Click vào người chơi khác: MỞ MENU TỎA TRÒN (RADIAL MENU)
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedTarget = p;
+        if (p.id === myId) {
+          openMirrorProfile(myPlayer);
+          return;
+        }
+        openRadialMenu(p, e.clientX, e.clientY);
+      });
+
+      playersContainer.appendChild(el);
+    }
+
+    function getAvatarClasses(tier, player) {
+      let base = 'w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-2xl transition-all relative border ';
+      if (player.id === myId) base += 'ring-4 ring-amber-400/90 animate-pulse ';
+
+      if (tier.scale && tier.scale > 1.0) base += `scale-[${tier.scale}] `;
+
+      if (tier.id === 'H7') {
+        base += 'bg-gradient-to-b from-yellow-200 via-amber-300 to-sky-300 border-yellow-300 shadow-amber-300/80 ring-2 ring-yellow-400 ';
+      } else if (tier.id === 'H6') {
+        base += 'bg-gradient-to-b from-purple-200 via-amber-200 to-sky-300 border-purple-300 shadow-purple-300/60 ring-2 ring-purple-300 ';
+      } else if (tier.id === 'H5') {
+        base += 'bg-gradient-to-b from-sky-200 via-teal-200 to-amber-200 border-sky-300 shadow-teal-300/60 ring-1 ring-sky-300 ';
+      } else if (tier.id === 'H4') {
+        base += 'bg-gradient-to-b from-amber-200 to-emerald-200 border-amber-300 shadow-amber-300/40 ';
+      } else if (tier.id === 'H3' || tier.id === 'H2') {
+        base += 'bg-gradient-to-b from-amber-100 to-sky-200 border-amber-300/60 shadow-sky-300/30 ';
+      } else if (tier.id === 'D7') {
+        base += 'bg-gradient-to-b from-red-950 via-purple-950 to-black border-red-500 shadow-purple-900/80 ring-2 ring-red-600 ';
+      } else if (tier.id === 'D6') {
+        base += 'bg-gradient-to-b from-purple-950 via-slate-900 to-black border-purple-500 shadow-purple-600/70 ring-2 ring-purple-600 ';
+      } else if (tier.id === 'D5' || tier.id === 'D4') {
+        base += 'bg-gradient-to-b from-rose-700 via-red-800 to-black border-rose-500 shadow-rose-600/60 ring-1 ring-rose-500 ';
+      } else {
+        base += 'bg-gradient-to-b from-rose-600 to-red-950 border-rose-500/60 shadow-rose-600/30 ';
+      }
+      return base;
+    }
+
+    function updatePlayerPosition(p, oldX = p.x) {
+      const el = document.getElementById(`player_${p.id}`);
+      if (!el) return;
+
+      const avatarBox = document.getElementById(`avatar_${p.id}`);
+      if (avatarBox) {
+        if (p.x < oldX) avatarBox.style.transform = 'scaleX(-1)';
+        else if (p.x > oldX) avatarBox.style.transform = 'scaleX(1)';
+      }
+
+      const hasSpeed = p.speedBoostUntil && Date.now() < p.speedBoostUntil;
+      el.style.transitionDuration = hasSpeed ? '350ms' : '700ms';
+
+      if (p.danceUntil && Date.now() < p.danceUntil) {
+        el.classList.add('is-dancing');
+      } else {
+        el.classList.remove('is-dancing');
+        el.classList.add('is-walking');
+      }
+
+      el.style.left = `${p.x}%`;
+      el.style.top = `${p.y}%`;
+
+      setTimeout(() => el.classList.remove('is-walking'), hasSpeed ? 360 : 720);
+    }
+
+    function updatePlayerBadge(p) {
+      const karmaSpan = document.getElementById(`karma_${p.id}`);
+      if (karmaSpan) {
+        karmaSpan.textContent = `[${p.karma}]`;
+        karmaSpan.className = `font-mono font-black ${p.karma >= 0 ? 'text-amber-300' : 'text-rose-400'}`;
+      }
+    }
+
+    function rebuildPlayerElement(p) {
+      const el = document.getElementById(`player_${p.id}`);
+      if (el) el.remove();
+      renderPlayerElement(p);
+    }
+
+    // Click bản đồ di chuyển
+    const gameWorld = document.getElementById('gameWorld');
+    gameWorld.addEventListener('click', (e) => {
+      closeRadialMenu();
+      if (!myPlayer || !socket) return;
+
+      const rect = gameWorld.getBoundingClientRect();
+      const clickX = ((e.clientX - rect.left) / rect.width) * 100;
+      const clickY = ((e.clientY - rect.top) / rect.height) * 100;
+
+      if (myPlayer.realm === 'heaven') {
+        if (clickY < 12 || clickY > 44) {
+          showToast('Bạn đang ở Thiên Đàng! Hãy di chuyển trong cõi thanh tịnh.', true);
+          return;
+        }
+      } else {
+        if (clickY < 56 || clickY > 88) {
+          showToast('Bạn đang ở Địa Ngục! Không thể tự bước qua Cầu Nại Hà.', true);
+          return;
+        }
+      }
+
+      createRippleEffect(e.clientX, e.clientY, myPlayer.realm === 'heaven');
+      socket.emit('player:move', { x: clickX, y: clickY });
+    });
+
+    function createRippleEffect(x, y, isHeaven) {
+      const ripple = document.createElement('div');
+      ripple.className = `absolute rounded-full pointer-events-none transform -translate-x-1/2 -translate-y-1/2 transition-all duration-500 ease-out border-2 ${
+        isHeaven ? 'border-amber-400' : 'border-rose-500'
+      }`;
+      ripple.style.left = `${x}px`;
+      ripple.style.top = `${y}px`;
+      ripple.style.width = '10px';
+      ripple.style.height = '10px';
+      ripple.style.opacity = '1';
+
+      document.body.appendChild(ripple);
+      requestAnimationFrame(() => {
+        ripple.style.width = '55px';
+        ripple.style.height = '55px';
+        ripple.style.opacity = '0';
+      });
+      setTimeout(() => ripple.remove(), 550);
+    }
+
+    function showChatBubble(playerId, text, isPenalty) {
+      const bubble = document.getElementById(`bubble_${playerId}`);
+      if (!bubble) return;
+
+      bubble.textContent = text;
+      bubble.className = `mb-2 px-3.5 py-2 max-w-[190px] speech-bubble text-[11px] font-extrabold rounded-2xl text-center break-words z-30 pointer-events-none ${
+        isPenalty ? 'is-penalty animate-bounce' : ''
+      }`;
+      bubble.classList.remove('hidden');
+
+      setTimeout(() => bubble.classList.add('hidden'), 5000);
+    }
+
+    // -------------------------------------------------------------
+    // 6. VÒNG TRÒN MENU TỎA TRÒN (RADIAL CONTEXT MENU)
+    // -------------------------------------------------------------
+    function openRadialMenu(target, clientX, clientY) {
+      closeRadialMenu();
+      selectedTarget = target;
+
+      const menuDiv = document.createElement('div');
+      menuDiv.id = 'activeRadialMenu';
+      menuDiv.className = 'absolute pointer-events-auto radial-bloom z-50 flex items-center justify-center';
+      menuDiv.style.left = `${clientX}px`;
+      menuDiv.style.top = `${clientY}px`;
+      menuDiv.style.width = '0px';
+      menuDiv.style.height = '0px';
+
+      // Nút tâm hiển thị Avatar mục tiêu
+      const centerBtn = document.createElement('div');
+      centerBtn.className = 'w-10 h-10 rounded-full bg-slate-900 border-2 border-amber-400 flex items-center justify-center text-lg shadow-2xl';
+      centerBtn.textContent = (target.tier || getPlayerTier(target.karma)).avatar;
+      centerBtn.title = target.name;
+      menuDiv.appendChild(centerBtn);
+
+      // Danh sách các hành động tỏa tròn
+      const actions = [];
+
+      // 1. Hồ Sơ / Gương Chiếu Nghiệp
+      actions.push({
+        icon: '🪞',
+        label: 'Soi Nghiệp',
+        color: 'from-amber-500 to-yellow-400 text-slate-950 border-amber-300',
+        onClick: () => openMirrorProfile(target)
+      });
+
+      if (myPlayer.realm === 'heaven') {
+        // Ném Sét Cà Khịa
+        actions.push({
+          icon: '⚡',
+          label: 'Ném Sét',
+          color: 'from-purple-700 to-indigo-700 text-white border-purple-400',
+          onClick: () => socket.emit('player:action', { type: 'smite', targetId: target.id })
+        });
+
+        if (target.realm === 'hell') {
+          // Cảm Hóa / Ban Phước Thăng Thiên
+          actions.push({
+            icon: '🕊️',
+            label: 'Cảm Hóa (+8)',
+            color: 'from-emerald-500 to-teal-500 text-white border-emerald-300',
+            onClick: () => socket.emit('player:action', { type: 'bless', targetId: target.id })
+          });
+        }
+
+        // Kỹ năng Thánh Quang Trừng Phạt / Ban Phước (H4+)
+        if (myPlayer.tier && myPlayer.tier.tier >= 4) {
+          actions.push({
+            icon: '✨',
+            label: target.realm === 'hell' ? 'Thánh Quang (-15)' : 'Ban Phước (+15)',
+            color: 'from-amber-400 to-yellow-500 text-slate-950 border-yellow-200',
+            onClick: () => {
+              selectedTarget = target;
+              castTrollSkill('holy_purify');
+            }
+          });
+        }
+
+        // Kỹ năng Hóa Ếch (H4)
+        if (myPlayer.tier && myPlayer.tier.tier >= 4) {
+          actions.push({
+            icon: '🐸',
+            label: 'Hóa Ếch',
+            color: 'from-green-600 to-emerald-700 text-white border-green-400',
+            onClick: () => castTrollSkill('frog_hex')
+          });
+        }
+
+        // Kỹ năng Pháo Giấy (H2)
+        if (myPlayer.tier && myPlayer.tier.tier >= 2) {
+          actions.push({
+            icon: '🎉',
+            label: 'Pháo Giấy',
+            color: 'from-yellow-400 to-amber-500 text-slate-950 border-yellow-200',
+            onClick: () => castTrollSkill('confetti_dance')
+          });
+        }
+
+      } else {
+        // Địa Ngục: Kéo giò cả đồng bọn và người Thiên Đàng (kéo rớt cõi)
+        actions.push({
+          icon: '🦀',
+          label: target.realm === 'heaven' ? 'Kéo Rớt Cõi (-8)' : 'Kéo Giò (-8)',
+          color: 'from-rose-700 to-red-600 text-white border-rose-400',
+          onClick: () => socket.emit('player:action', { type: 'pull_leg', targetId: target.id })
+        });
+
+        // Hóa Heo (D3)
+        if (myPlayer.tier && myPlayer.tier.tier >= 10) {
+          actions.push({
+            icon: '🐷',
+            label: 'Hóa Heo',
+            color: 'from-pink-600 to-rose-600 text-white border-pink-400',
+            onClick: () => castTrollSkill('pig_hex')
+          });
+        }
+
+        // Đi Ngược (D4)
+        if (myPlayer.tier && myPlayer.tier.tier >= 11) {
+          actions.push({
+            icon: '🙃',
+            label: 'Đi Ngược',
+            color: 'from-purple-800 to-indigo-800 text-white border-purple-400',
+            onClick: () => castTrollSkill('reverse_walk')
+          });
+        }
+
+        // Xích Câu Hồn (D5) - Hút 15 Karma từ Thiên Đàng
+        if (myPlayer.tier && myPlayer.tier.tier >= 12 && target.realm === 'heaven') {
+          actions.push({
+            icon: '⛓️',
+            label: 'Hút Hồn (-15)',
+            color: 'from-purple-900 to-black text-rose-300 border-rose-500',
+            onClick: () => {
+              selectedTarget = target;
+              castTrollSkill('soul_chain');
+            }
+          });
+        }
+      }
+
+      // Bố trí tỏa tròn theo góc
+      const radius = 68; // px
+      const count = actions.length;
+      const step = (Math.PI * 2) / count;
+
+      actions.forEach((act, idx) => {
+        const angle = idx * step - Math.PI / 2;
+        const x = Math.round(Math.cos(angle) * radius);
+        const y = Math.round(Math.sin(angle) * radius);
+
+        const btn = document.createElement('button');
+        btn.className = `absolute w-10 h-10 rounded-full bg-gradient-to-tr ${act.color} border shadow-xl flex items-center justify-center text-base hover:scale-125 transition-transform duration-200 group`;
+        btn.style.left = `${x}px`;
+        btn.style.top = `${y}px`;
+        btn.style.transform = 'translate(-50%, -50%)';
+
+        btn.innerHTML = `<span>${act.icon}</span>`;
+
+        const tip = document.createElement('span');
+        tip.className = 'absolute -bottom-6 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-black bg-slate-900 px-1.5 py-0.5 rounded-md border border-slate-700 text-white whitespace-nowrap z-50';
+        tip.textContent = act.label;
+        btn.appendChild(tip);
+
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          act.onClick();
+          closeRadialMenu();
+        };
+
+        menuDiv.appendChild(btn);
+      });
+
+      radialMenuContainer.appendChild(menuDiv);
+    }
+
+    function closeRadialMenu() {
+      const active = document.getElementById('activeRadialMenu');
+      if (active) active.remove();
+    }
+
+    function openMirrorProfile(player) {
+      if (!player) return;
+      const tier = player.tier || getPlayerTier(player.karma);
+      const stats = player.stats || { ascended: 0, descended: 0, smited: 0, pulled: 0 };
+
+      document.getElementById('mirrorAvatar').textContent = tier.avatar;
+      document.getElementById('mirrorName').textContent = player.name;
+      document.getElementById('mirrorTier').textContent = `[${tier.title}]`;
+
+      const karmaEl = document.getElementById('mirrorKarma');
+      karmaEl.textContent = `${player.karma >= 0 ? '+' : ''}${player.karma} Karma`;
+      karmaEl.className = `mt-2 inline-block px-3.5 py-1 rounded-full bg-slate-950 border font-mono text-xs font-black ${
+        player.karma >= 0 ? 'text-amber-400 border-amber-500/40' : 'text-rose-400 border-rose-500/40'
+      }`;
+
+      document.getElementById('mirrorAscended').textContent = stats.ascended || 0;
+      document.getElementById('mirrorDescended').textContent = stats.descended || 0;
+      document.getElementById('mirrorSmited').textContent = stats.smited || 0;
+      document.getElementById('mirrorPulled').textContent = stats.pulled || 0;
+      const mirrorRecruited = document.getElementById('mirrorRecruited');
+      if (mirrorRecruited) mirrorRecruited.textContent = `${stats.recruited || 0} người`;
+
+      modalMirrorProfile.classList.remove('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // 7. CÔNG TRÌNH TƯƠNG TÁC (LANDMARKS)
+    // -------------------------------------------------------------
+    document.getElementById('landmarkSoupShop').addEventListener('click', () => {
+      if (socket) socket.emit('landmark:drink_soup');
+    });
+
+    document.getElementById('landmarkCauldron').addEventListener('click', () => {
+      if (socket) socket.emit('landmark:enter_cauldron');
+    });
+
+    function renderPeaches(peaches) {
+      peachesContainer.innerHTML = '';
+      peaches.forEach(p => {
+        const el = document.createElement('div');
+        el.id = p.id;
+        el.className = 'absolute z-20 pointer-events-auto cursor-pointer text-3xl transform -translate-x-1/2 -translate-y-1/2 hover:scale-130 transition drop-shadow-[0_0_12px_#f472b6] animate-bounce';
+        el.style.left = `${p.x}%`;
+        el.style.top = `${p.y}%`;
+        el.textContent = '🍑';
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          socket.emit('landmark:pick_peach', { peachId: p.id });
+        });
+        peachesContainer.appendChild(el);
+      });
+    }
+
+    function removePeachElement(peachId) {
+      const el = document.getElementById(peachId);
+      if (el) el.remove();
+    }
+
+    function spawnBananaElement(banana) {
+      if (document.getElementById(banana.id)) return;
+      const el = document.createElement('div');
+      el.id = banana.id;
+      el.className = 'absolute z-15 text-2xl pointer-events-none transform -translate-x-1/2 -translate-y-1/2 drop-shadow-[0_0_8px_#fde047] animate-pulse';
+      el.style.left = `${banana.x}%`;
+      el.style.top = `${banana.y}%`;
+      el.textContent = '🍌';
+      trapsContainer.appendChild(el);
+    }
+
+    function removeBananaElement(bananaId) {
+      const el = document.getElementById(bananaId);
+      if (el) el.remove();
+    }
+
+    function spawnPacketElement(pkt) {
+      if (document.getElementById(pkt.id)) return;
+      const el = document.createElement('div');
+      el.id = pkt.id;
+      el.className = 'absolute z-20 text-3xl pointer-events-auto cursor-pointer transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition drop-shadow-[0_0_12px_#ef4444] animate-bounce';
+      el.style.left = `${pkt.x}%`;
+      el.style.top = `${pkt.y}%`;
+      el.textContent = '🧧';
+      el.onclick = (e) => {
+        e.stopPropagation();
+        if (socket) socket.emit('landmark:pick_packet', { packetId: pkt.id });
+      };
+      trapsContainer.appendChild(el);
+    }
+
+    function removePacketElement(pktId) {
+      const el = document.getElementById(pktId);
+      if (el) el.remove();
+    }
+
+    function spawnFartElement(fart) {
+      const el = document.createElement('div');
+      el.className = 'absolute z-15 w-28 h-28 rounded-full bg-emerald-500/35 blur-2xl pointer-events-none transform -translate-x-1/2 -translate-y-1/2 animate-ping';
+      el.style.left = `${fart.x}%`;
+      el.style.top = `${fart.y}%`;
+      effectsContainer.appendChild(el);
+      setTimeout(() => el.remove(), 10000);
+    }
+
+    function spawnBlackHoleElement(hole) {
+      const el = document.createElement('div');
+      el.className = 'absolute z-15 w-32 h-32 rounded-full bg-gradient-to-r from-purple-950 via-black to-red-950 border-4 border-dashed border-purple-500/80 black-hole-anim pointer-events-none transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center text-4xl shadow-[0_0_40px_#9333ea]';
+      el.style.left = `${hole.x}%`;
+      el.style.top = `${hole.y}%`;
+      el.textContent = '🕳️';
+      effectsContainer.appendChild(el);
+      setTimeout(() => el.remove(), hole.duration || 5000);
+    }
+
+    function showCauldronCountdown(playerId, finishAt) {
+      const bar = document.getElementById(`boil_bar_${playerId}`);
+      if (!bar) return;
+
+      bar.classList.remove('hidden');
+      const update = () => {
+        const remaining = Math.max(0, Math.ceil((finishAt - Date.now()) / 1000));
+        bar.textContent = `♨️ Tắm vạc: ${remaining}s`;
+        if (remaining <= 0) bar.classList.add('hidden');
+        else requestAnimationFrame(update);
+      };
+      update();
+    }
+
+    function removeCauldronCountdown(playerId) {
+      const bar = document.getElementById(`boil_bar_${playerId}`);
+      if (bar) bar.classList.add('hidden');
+    }
+
+    // -------------------------------------------------------------
+    // 8. VẬT PHẨM BAY & THẢ TIM (HOA ĐĂNG & SỚ HỐI LỖI)
+    // -------------------------------------------------------------
+    function createFloatingItem(item) {
+      const isLantern = item.type === 'lantern';
+      const el = document.createElement('div');
+      el.id = `item_${item.itemId}`;
+      el.className = `absolute z-20 pointer-events-auto flex items-center space-x-2.5 backdrop-blur-xl px-4 py-2 rounded-full border shadow-2xl transition-transform duration-[14000ms] ease-linear ${
+        isLantern
+          ? (item.isGolden ? 'bg-amber-400/25 border-yellow-300 shadow-[0_0_20px_#fde047]' : 'bg-amber-500/20 border-amber-400/80')
+          : 'bg-rose-950/85 border-rose-500 shadow-[0_0_20px_#f43f5e]'
+      }`;
+      el.style.top = `${Math.max(8, Math.min(84, item.y))}%`;
+      el.style.left = '-300px';
+
+      const icon = document.createElement('span');
+      icon.className = item.isGolden ? 'text-xl animate-pulse' : 'text-lg';
+      icon.textContent = isLantern ? (item.isGolden ? '✨🏮' : '🏮') : '📜';
+
+      const content = document.createElement('span');
+      content.className = `text-xs font-bold whitespace-nowrap ${isLantern ? 'text-amber-200' : 'text-rose-200'}`;
+      content.textContent = `${item.playerName}: "${item.text}"`;
+
+      // Nút Thả Tim
+      const btnLike = document.createElement('button');
+      btnLike.className = 'px-2.5 py-0.5 rounded-full bg-slate-900/90 hover:bg-rose-900/90 active:scale-95 text-xs font-black text-rose-300 border border-rose-400/50 flex items-center space-x-1.5 transition shadow-sm';
+      const heartIcon = document.createElement('span');
+      heartIcon.textContent = '❤️';
+      const likeCount = document.createElement('span');
+      likeCount.id = `like_count_${item.itemId}`;
+      likeCount.textContent = '0';
+
+      btnLike.appendChild(heartIcon);
+      btnLike.appendChild(likeCount);
+
+      btnLike.onclick = (e) => {
+        e.stopPropagation();
+        if (socket) socket.emit('world:like_item', { itemId: item.itemId });
+      };
+
+      el.appendChild(icon);
+      el.appendChild(content);
+      el.appendChild(btnLike);
+      effectsContainer.appendChild(el);
+
+      requestAnimationFrame(() => {
+        el.style.transform = `translateX(${window.innerWidth + 650}px)`;
+      });
+      setTimeout(() => el.remove(), 14500);
+    }
+
+    function updateItemLikeCount(itemId, count) {
+      const span = document.getElementById(`like_count_${itemId}`);
+      if (span) {
+        span.textContent = count;
+        span.classList.add('text-rose-400', 'font-black');
+      }
+    }
+
+    // Xử lý World Effect
+    function handleWorldEffect(effect) {
+      if (effect.isBuffed) {
+        showFloatingText(effect.x || (effect.sourceX || 50), (effect.y || effect.sourceY || 50) - 4, '⚡ BUFF x2 CỨ ĐIỂM!', 'text-amber-300 font-black text-xs animate-bounce');
+      }
+
+      if (effect.type === 'wooden_fish') {
+        sound.playWoodenFishCombo(effect.combo);
+
+        let label = `+${effect.karmaDelta} Công Đức 🪵`;
+        let style = 'text-amber-400 font-extrabold text-xs';
+        if (effect.comboTier === 3) {
+          label = `🔥 FEVER x${effect.combo} (+${effect.karmaDelta})! 🪵`;
+          style = 'text-yellow-300 font-black text-sm tracking-wide';
+          const wave = document.getElementById(`wave_${effect.sourceId}`);
+          if (wave) {
+            wave.classList.remove('hidden');
+            wave.classList.add('soundwave-anim');
+            setTimeout(() => {
+              wave.classList.remove('soundwave-anim');
+              wave.classList.add('hidden');
+            }, 600);
+          }
+        } else if (effect.comboTier === 2) {
+          label = `✨ Combo x${effect.combo} (+${effect.karmaDelta}) 🪵`;
+          style = 'text-orange-400 font-black text-xs';
+        }
+
+        showFloatingText(effect.x, effect.y, label, style);
+
+        if (effect.sourceId === myId) {
+          const txtBtn = document.getElementById('txtFishCombo');
+          if (txtBtn) {
+            txtBtn.textContent = effect.combo > 1 ? `Gõ Mõ (Combo x${effect.combo})` : 'Gõ Mõ Sám Hối (+4)';
+          }
+        }
+      } else if (effect.type === 'meditate') {
+        sound.playHarpBell();
+        showFloatingText(effect.x, effect.y, '+3 Thanh Tịnh 🪷', 'text-sky-300 font-bold text-xs');
+      } else if (effect.type === 'fast_chant') {
+        sound.playHarpBell();
+        showFloatingText(effect.x, effect.y, '🧘 Tụng Kinh Gấp Đôi (+1) ✨', 'text-emerald-300 font-black text-xs');
+      } else if (effect.type === 'fast_chaos') {
+        sound.playPullLeg();
+        showFloatingText(effect.x, effect.y, '🔥 Phá Phách Địa Ngục (-1) 😈', 'text-orange-400 font-black text-xs');
+      } else if (effect.type === 'holy_purify') {
+        sound.playHolyPurify();
+        drawHolyBeam(effect.sourceX, effect.sourceY, effect.targetX, effect.targetY);
+        if (effect.mode === 'punish') {
+          showFloatingText(effect.targetX, effect.targetY, '✨ Bị Thánh Quang Trừng Phạt (-15 Karma)!', 'text-amber-300 font-black text-sm');
+          showFloatingText(effect.sourceX, effect.sourceY, '✨ Thanh Tẩy Kẻ Ác (+15 Karma)!', 'text-yellow-200 font-black text-sm');
+        } else {
+          showFloatingText(effect.targetX, effect.targetY, '🌟 Được Ban Phước Thánh Quang (+15 Karma)!', 'text-emerald-300 font-black text-sm');
+          showFloatingText(effect.sourceX, effect.sourceY, '🌟 Tiếp Sức Đồng Đội (+5 Karma)!', 'text-teal-200 font-bold text-xs');
+        }
+      } else if (effect.type === 'self_sin') {
+        sound.playThunder();
+        showFloatingText(effect.x, effect.y, `${effect.reason} (-25) 😈`, 'text-rose-400 font-black text-xs');
+      } else if (effect.type === 'lantern') {
+        sound.playHarpBell();
+        createFloatingItem(effect);
+      } else if (effect.type === 'confess') {
+        sound.playWoodenFishCombo(1);
+        createFloatingItem(effect);
+      } else if (effect.type === 'smite') {
+        sound.playThunder();
+        createLightningBolt(effect.targetX, effect.targetY);
+        document.body.classList.add('screen-shake');
+        setTimeout(() => document.body.classList.remove('screen-shake'), 400);
+
+        if (effect.targetId) {
+          const avatar = document.getElementById(`avatar_${effect.targetId}`);
+          if (avatar) {
+            avatar.classList.add('is-burnt');
+            setTimeout(() => avatar.classList.remove('is-burnt'), 3000);
+          }
+        }
+      } else if (effect.type === 'bless') {
+        sound.playHarpBell();
+        showFloatingText(effect.targetX, effect.targetY, '✨ Được Ban Phước (+5)!', 'text-emerald-300 font-extrabold text-sm');
+      } else if (effect.type === 'pull_leg') {
+        sound.playPullLeg();
+        showFloatingText(effect.targetX, effect.targetY, `🦀 Bị Kéo Giò (-${effect.penalty})!`, 'text-red-400 font-extrabold text-sm');
+      } else if (effect.type === 'confetti_dance') {
+        sound.playHarpBell();
+        showFloatingText(effect.targetX, effect.targetY, '🎉 Bị Rắc Pháo Giấy! Nhảy Múa 3s!', 'text-yellow-300 font-black text-sm');
+      } else if (effect.type === 'reverse_walk') {
+        sound.playBoingSlip();
+        showFloatingText(effect.targetX, effect.targetY, '🙃 Bị Bùa Đi Ngược Lú Lẫn 10s!', 'text-purple-300 font-black text-sm');
+      } else if (effect.type === 'soul_chain') {
+        sound.playChainWhip();
+        drawChainLine(effect.sourceX, effect.sourceY, effect.targetX, effect.targetY);
+        showFloatingText(effect.targetX, effect.targetY, '⛓️ Bị Xích Câu Hồn Hút 15 Karma!', 'text-purple-300 font-black text-sm');
+        showFloatingText(effect.sourceX, effect.sourceY, '⚡ Hút 15 Karma từ thiên thần!', 'text-rose-400 font-black text-sm');
+      } else if (effect.type === 'mirror_reflect') {
+        sound.playMirrorReflect();
+        showFloatingText(effect.targetX, effect.targetY, `🪞 Bị Khiên Phản Nghiệp Dội Ngược [${effect.skillName}]!`, 'text-sky-300 font-black text-sm');
+      } else if (effect.type === 'shield_activate') {
+        sound.playMirrorReflect();
+        const p = playersMap.get(effect.playerId);
+        if (p) {
+          p.shieldUntil = effect.until;
+          rebuildPlayerElement(p);
+        }
+      } else if (effect.type === 'soup_clearmind') {
+        sound.playDrinkSoup('clearmind');
+        showFloatingText(effect.x, effect.y, '🍵 Canh Thanh Tâm (+20)!', 'text-emerald-300 font-black text-sm');
+      } else if (effect.type === 'soup_drunk') {
+        sound.playDrinkSoup('drunk');
+        showFloatingText(effect.x, effect.y, '🥴 Canh Quá Đát! Say Bí Tỉ!', 'text-amber-400 font-black text-sm');
+      } else if (effect.type === 'soup_spicy') {
+        sound.playDrinkSoup('spicy');
+        showFloatingText(effect.x, effect.y, '🌶️ Sặc Ớt Hiểm (-15)!', 'text-rose-500 font-black text-sm');
+      } else if (effect.type === 'author_liked') {
+        showFloatingText(effect.targetX, effect.targetY, '+3 ❤️ Đồng cảm!', 'text-rose-400 font-extrabold text-xs');
+      }
+    }
+
+    function drawChainLine(x1, y1, x2, y2) {
+      const line = document.createElement('div');
+      line.className = 'absolute z-30 pointer-events-none border-t-2 border-dashed border-purple-400 origin-top-left';
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const px1 = (x1 / 100) * w;
+      const py1 = (y1 / 100) * h;
+      const px2 = (x2 / 100) * w;
+      const py2 = (y2 / 100) * h;
+
+      const dist = Math.hypot(px2 - px1, py2 - py1);
+      const angle = Math.atan2(py2 - py1, px2 - px1) * (180 / Math.PI);
+
+      line.style.left = `${px1}px`;
+      line.style.top = `${py1}px`;
+      line.style.width = `${dist}px`;
+      line.style.transform = `rotate(${angle}deg)`;
+
+      effectsContainer.appendChild(line);
+      setTimeout(() => line.remove(), 600);
+    }
+
+    function drawHolyBeam(x1, y1, x2, y2) {
+      const line = document.createElement('div');
+      line.className = 'absolute z-30 pointer-events-none bg-gradient-to-r from-amber-300 via-yellow-100 to-white origin-top-left shadow-[0_0_20px_#fde047]';
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const px1 = (x1 / 100) * w;
+      const py1 = (y1 / 100) * h;
+      const px2 = (x2 / 100) * w;
+      const py2 = (y2 / 100) * h;
+
+      const dist = Math.hypot(px2 - px1, py2 - py1);
+      const angle = Math.atan2(py2 - py1, px2 - px1) * (180 / Math.PI);
+
+      line.style.left = `${px1}px`;
+      line.style.top = `${py1}px`;
+      line.style.width = `${dist}px`;
+      line.style.height = '4px';
+      line.style.transform = `rotate(${angle}deg)`;
+
+      effectsContainer.appendChild(line);
+      setTimeout(() => line.remove(), 700);
+    }
+
+    function showFloatingText(xPercent, yPercent, text, extraClass = '') {
+      const el = document.createElement('div');
+      el.className = `absolute z-30 pointer-events-none transform -translate-x-1/2 rise-fade ${extraClass}`;
+      el.style.left = `${xPercent}%`;
+      el.style.top = `${yPercent}%`;
+      el.textContent = text;
+      effectsContainer.appendChild(el);
+      setTimeout(() => el.remove(), 1300);
+    }
+
+    function createLightningBolt(targetX, targetY) {
+      const bolt = document.createElement('div');
+      bolt.className = 'absolute z-30 pointer-events-none bg-gradient-to-b from-yellow-300 via-white to-sky-300 shadow-[0_0_30px_#fef08a] transition-opacity duration-300';
+      bolt.style.left = `${targetX}%`;
+      bolt.style.top = '0';
+      bolt.style.width = '6px';
+      bolt.style.height = `${targetY}%`;
+      bolt.style.opacity = '1';
+
+      effectsContainer.appendChild(bolt);
+      setTimeout(() => {
+        bolt.style.opacity = '0';
+        setTimeout(() => bolt.remove(), 300);
+      }, 150);
+    }
+
+    // -------------------------------------------------------------
+    // 9. ĐÀI PHÁN XÉT CÔNG CỘNG (MINI-EVENT)
+    // -------------------------------------------------------------
+    const trialBanner = document.getElementById('trialBanner');
+    const trialTimerText = document.getElementById('trialTimerText');
+    const trialAuthorName = document.getElementById('trialAuthorName');
+    const trialContentText = document.getElementById('trialContentText');
+    const btnVoteForgive = document.getElementById('btnVoteForgive');
+    const btnVotePunish = document.getElementById('btnVotePunish');
+    let trialCountdown = null;
+
+    function showTrialBanner(trial) {
+      trialAuthorName.textContent = trial.authorName;
+      trialContentText.textContent = `"${trial.text}"`;
+      document.getElementById('voteForgiveBadge').textContent = trial.forgiveCount || 0;
+      document.getElementById('votePunishBadge').textContent = trial.punishCount || 0;
+
+      btnVoteForgive.disabled = false;
+      btnVotePunish.disabled = false;
+      btnVoteForgive.classList.remove('opacity-50');
+      btnVotePunish.classList.remove('opacity-50');
+
+      trialBanner.classList.remove('hidden');
+
+      if (trialCountdown) clearInterval(trialCountdown);
+      const updateTimer = () => {
+        const remaining = Math.max(0, Math.ceil((trial.endsAt - Date.now()) / 1000));
+        trialTimerText.textContent = remaining;
+        if (remaining <= 0) clearInterval(trialCountdown);
+      };
+      updateTimer();
+      trialCountdown = setInterval(updateTimer, 1000);
+    }
+
+    function hideTrialBanner(data) {
+      if (trialCountdown) clearInterval(trialCountdown);
+      const isForgiven = data.result === 'forgive';
+      showToast(
+        isForgiven
+          ? `🕊️ Phiên xử kết thúc! Chúng sinh đã ĐẠI XÁ cho ${data.authorName}!`
+          : `🔥 Phiên xử kết thúc! ${data.authorName} bị phạt tiếp vì nghiệp chướng quá nặng!`,
+        !isForgiven
+      );
+      setTimeout(() => trialBanner.classList.add('hidden'), 1500);
+    }
+
+    btnVoteForgive.addEventListener('click', () => {
+      if (socket) {
+        socket.emit('trial:vote', { vote: 'forgive' });
+        btnVoteForgive.disabled = true;
+        btnVotePunish.disabled = true;
+        btnVoteForgive.classList.add('opacity-50');
+        btnVotePunish.classList.add('opacity-50');
+        showToast('Bạn đã bỏ phiếu: Tha Thứ 🕊️');
+      }
+    });
+
+    btnVotePunish.addEventListener('click', () => {
+      if (socket) {
+        socket.emit('trial:vote', { vote: 'punish' });
+        btnVoteForgive.disabled = true;
+        btnVotePunish.disabled = true;
+        btnVoteForgive.classList.add('opacity-50');
+        btnVotePunish.classList.add('opacity-50');
+        showToast('Bạn đã bỏ phiếu: Phạt Tiếp 🔥');
+      }
+    });
+
+    // Render Bảng Phong Thần
+    function renderLeaderboard(data) {
+      listSaints.innerHTML = '';
+      listSinners.innerHTML = '';
+
+      if (data.saints && data.saints.length > 0) {
+        data.saints.forEach((s, idx) => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between py-1.5 border-b border-slate-800';
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = `${idx + 1}. ${s.name} [${s.tier || 'Thánh'}]`;
+          const kSpan = document.createElement('span');
+          kSpan.className = 'font-bold text-amber-300 font-mono';
+          kSpan.textContent = `+${s.karma}`;
+          row.appendChild(nameSpan);
+          row.appendChild(kSpan);
+          listSaints.appendChild(row);
+        });
+      }
+
+      if (data.sinners && data.sinners.length > 0) {
+        data.sinners.forEach((s, idx) => {
+          const row = document.createElement('div');
+          row.className = 'flex items-center justify-between py-1.5 border-b border-slate-800';
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = `${idx + 1}. ${s.name} [${s.tier || 'Tội đồ'}]`;
+          const kSpan = document.createElement('span');
+          kSpan.className = 'font-bold text-rose-400 font-mono';
+          kSpan.textContent = `${s.karma}`;
+          row.appendChild(nameSpan);
+          row.appendChild(kSpan);
+          listSinners.appendChild(row);
+        });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 10. PHÍM TẮT DEV NHANH & HOTKEYS KỸ NĂNG (1..6)
+    // -------------------------------------------------------------
+    window.addEventListener('keydown', (e) => {
+      if (['input', 'textarea'].includes((document.activeElement?.tagName || '').toLowerCase())) return;
+
+      if (e.shiftKey && e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (socket) socket.emit('dev:set_karma', { delta: 150 });
+      } else if (e.shiftKey && e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (socket) socket.emit('dev:set_karma', { delta: -150 });
+      } else if (['1', '2', '3', '4', '5', '6'].includes(e.key)) {
+        const idx = parseInt(e.key, 10) - 1;
+        if (myPlayer) {
+          const isHeaven = myPlayer.realm === 'heaven';
+          const keys = isHeaven ? ['H2', 'H3', 'H4', 'H5', 'H6', 'H7'] : ['D2', 'D3', 'D4', 'D5', 'D6', 'D7'];
+          const tierData = EVOLUTION_TIERS[keys[idx]];
+          if (tierData) {
+            const isUnlocked = isHeaven ? (myPlayer.karma >= tierData.reqKarma) : (myPlayer.karma <= tierData.reqKarma);
+            if (!isUnlocked) {
+              const diff = isHeaven ? (tierData.reqKarma - myPlayer.karma) : (myPlayer.karma - tierData.reqKarma);
+              showToast(`⚠️ Cần đạt bậc [${tierData.title}] (${isHeaven ? '+' : ''}${tierData.reqKarma} Karma) mới dùng được chiêu này! (Còn thiếu ${diff} điểm)`, true);
+            } else if (skillCooldownTimers[tierData.skill] && skillCooldownTimers[tierData.skill].remaining > 0) {
+              showToast(`⏳ Kỹ năng đang hồi chiêu: còn ${skillCooldownTimers[tierData.skill].remaining} giây!`, true);
+            } else {
+              castTrollSkill(tierData.skill);
+            }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
